@@ -545,6 +545,81 @@ button, select {
 .kelas-row.rendah .pct { color: var(--color-orange-700); font-weight: 700; }
 .kelas-row.rendah .fill { background: var(--color-orange-700); }
 
+/* ---------- Donut kategori (CSS murni, tanpa library) ---------- */
+.donut-wrap {
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
+  flex-wrap: wrap;
+  margin-top: var(--space-4);
+}
+
+.donut {
+  position: relative;
+  flex: none;
+  width: 148px;
+  aspect-ratio: 1 / 1;
+  border-radius: 50%;
+  background: var(--color-slate-100);
+}
+
+.donut::after {
+  content: '';
+  position: absolute;
+  inset: 24%;
+  border-radius: 50%;
+  background: var(--color-surface);
+}
+
+.donut-center {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  text-align: center;
+}
+
+.donut-center b { font-size: 15px; }
+.donut-center small { color: var(--color-slate-600); font-size: 11px; }
+
+.donut-legend {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  flex: 1;
+  min-width: 140px;
+  font-size: 13px;
+}
+
+.donut-legend span { display: flex; align-items: center; gap: var(--space-2); }
+.donut-legend .swatch { flex: none; }
+.donut-legend .dl-nama { min-width: 0; overflow-wrap: break-word; }
+.donut-legend .dl-nilai { margin-left: auto; color: var(--color-slate-700); }
+
+/* ---------- Tugas & pengingat ---------- */
+.tugas-list { display: flex; flex-direction: column; margin-top: var(--space-2); }
+
+.tugas-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-2);
+  border-bottom: 1px solid var(--color-slate-100);
+  font-size: 13.5px;
+}
+
+.tugas-row:last-child { border-bottom: none; }
+.tugas-row .chip { flex: none; }
+.tugas-teks { min-width: 0; overflow-wrap: break-word; }
+
+.tugas-aksi { cursor: pointer; border-radius: var(--radius-ctl); }
+.tugas-aksi:hover { background: var(--color-slate-100); }
+
 /* ---------- Metode ---------- */
 .stack {
   display: flex;
@@ -1127,7 +1202,27 @@ th.num { text-align: right; }
     gap: var(--space-3);
   }
   #page-dashboard .grid-kpi .card { padding: var(--space-4); }
-  #page-dashboard .grid-kpi .card-value { font-size: 18px; }
+  #page-dashboard .grid-kpi .card-value {
+    font-size: 17px;
+    overflow-wrap: anywhere;
+    line-height: 1.3;
+  }
+
+  /* Judul dashboard menempel saat digulir, meniru header meja kerja. */
+  #page-dashboard .topbar {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    background: var(--color-bg);
+    padding: var(--space-2) 0;
+    margin-bottom: var(--space-4);
+    border-bottom: 1px solid var(--color-slate-200);
+  }
+
+  /* Donut dan legend menumpuk di layar sempit. */
+  .donut-wrap { gap: var(--space-4); }
+  .donut { width: 132px; }
+  .donut-legend { min-width: 0; flex-basis: 100%; }
   .chart-scroll .chart,
   .chart-scroll .chart-x { min-width: 620px; }
   /* Tepi kanan berbayang tipis: penanda isi grafik masih bisa digeser. */
