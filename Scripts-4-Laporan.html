@@ -1,0 +1,765 @@
+<script>
+// ==== LAPORAN (klien) ====
+var dataLaporan = null;
+
+function kolomLaporan_(jenis) {
+  if (jenis === 'kategori') {
+    return [
+      { label: 'Jenis biaya', kunci: 'nama' },
+      { label: 'Nominal', nilai: function (b) { return rupiah(b.nominal); }, kelas: 'td-jumlah num' }
+    ];
+  }
+  if (jenis === 'kelas') {
+    return [
+      { label: 'Kelas', kunci: 'kelas' },
+      { label: 'Tagihan', nilai: function (b) { return rupiah(b.tagihan); }, kelas: 'td-jumlah num' },
+      { label: 'Terbayar', nilai: function (b) { return rupiah(b.terbayar); }, kelas: 'td-jumlah num' },
+      { label: 'Tunggakan', nilai: function (b) { return rupiah(b.tunggakan); }, kelas: 'td-jumlah num' },
+      { label: 'Persen', nilai: function (b) { return Number(b.persen) + '%'; }, kelas: 'num' }
+    ];
+  }
+  if (jenis === 'tunggakan') {
+    return [
+      { label: 'NISN', kunci: 'nisn', kelas: 'td-bukti num' },
+      { label: 'Nama', kunci: 'nama', kelas: 'td-taruna' },
+      { label: 'Kelas', kunci: 'kelas' },
+      { label: 'Tunggakan', nilai: function (b) { return rupiah(b.tunggakan); }, kelas: 'td-jumlah num' }
+    ];
+  }
+  return [
+    { label: 'Bulan', kunci: 'bulan' },
+    { label: 'Penerimaan', nilai: function (b) { return rupiah(b.penerimaan); }, kelas: 'td-jumlah num' },
+    { label: 'Pengeluaran', nilai: function (b) { return rupiah(b.pengeluaran); }, kelas: 'td-jumlah num' },
+    { label: 'Selisih', nilai: function (b) { return rupiah(b.selisih); }, kelas: 'td-jumlah num' }
+  ];
+}
+
+// Satu baris total di kaki tabel agar rekap tidak perlu dijumlah manual.
+function totalLaporan_(jenis, baris) {
+  if (!baris.length) return [];
+  var jumlah = function (kunci) {
+    return baris.reduce(function (a, b) { return a + (Number(b[kunci]) || 0); }, 0);
+  };
+  if (jenis === 'kategori') return ['Total', rupiah(jumlah('nominal'))];
+  if (jenis === 'kelas') {
+    var tagihan = jumlah('tagihan');
+    var terbayar = jumlah('terbayar');
+    return ['Total', rupiah(tagihan), rupiah(terbayar), rupiah(jumlah('tunggakan')),
+      (tagihan ? Math.round((terbayar / tagihan) * 100) : 0) + '%'];
+  }
+  if (jenis === 'tunggakan') return ['Total', '', '', rupiah(jumlah('tunggakan'))];
+  return ['Total', rupiah(jumlah('penerimaan')), rupiah(jumlah('pengeluaran')), rupiah(jumlah('selisih'))];
+}
+
+function nilaiCsvLaporan_(jenis, b) {
+  if (jenis === 'kategori') return [b.nama, Number(b.nominal) || 0];
+  if (jenis === 'kelas') return [b.kelas, Number(b.tagihan) || 0, Number(b.terbayar) || 0,
+    Number(b.tunggakan) || 0, Number(b.persen) + '%'];
+  if (jenis === 'tunggakan') return [b.nisn, b.nama, b.kelas, Number(b.tunggakan) || 0];
+  return [b.bulan, Number(b.penerimaan) || 0, Number(b.pengeluaran) || 0, Number(b.selisih) || 0];
+}
+
+function renderLaporan() {
+  var jenis = nilaiEl_('laporanJenis');
+  var kolom = kolomLaporan_(jenis);
+  var kepala = document.getElementById('kepalaLaporan');
+  if (kepala) {
+    kepala.innerHTML = '<tr>' + kolom.map(function (k) {
+      var angka = String(k.kelas || '').indexOf('num') > -1;
+      return '<th' + (angka ? ' class="num"' : '') + '>' + escapeHtml(k.label) + '</th>';
+    }).join('') + '</tr>';
+  }
+  var baris = (dataLaporan && dataLaporan.baris) || [];
+  var nol = 0;
+  renderTabel(document.getElementById('barisLaporan'), kolom, baris, {
+    kelasBaris: function (b) {
+      // Hanya rekap bulanan yang punya bulan kosong.
+      if (jenis !== 'bulanan') return '';
+      var kosong = !Number(b.penerimaan) && !Number(b.pengeluaran);
+      if (kosong) nol++;
+      return kosong ? 'baris-nol' : '';
+    }
+  });
+
+  var kaki = document.getElementById('kakiLaporan');
+  var total = totalLaporan_(jenis, baris);
+  if (kaki) {
+    kaki.innerHTML = total.length ? '<tr>' + total.map(function (nilai, i) {
+      var k = kolom[i] || {};
+      var angka = i > 0 && String(k.kelas || '').indexOf('num') > -1;
+      return '<td' + (angka ? ' class="td-jumlah num"' : '') +
+        (i > 0 && k.label ? ' data-label="' + escapeHtml(k.label) + '"' : '') + '>' +
+        escapeHtml(nilai) + '</td>';
+    }).join('') + '</tr>' : '';
+  }
+  var catatan = document.getElementById('laporanCatatanNol');
+  if (catatan) catatan.hidden = !(jenis === 'bulanan' && nol > 0);
+
+  isiTeks('laporanJumlah', baris.length + ' baris');
+
+  var ringkas = (dataLaporan && dataLaporan.ringkas) || {};
+  isiTeks('lapPenerimaan', rupiah(Number(ringkas.penerimaan) || 0));
+  isiTeks('lapPengeluaran', rupiah(Number(ringkas.pengeluaran) || 0));
+  isiTeks('lapSaldo', rupiah(Number(ringkas.saldo) || 0));
+}
+
+function muatLaporan() {
+  var jenis = nilaiEl_('laporanJenis') || 'bulanan';
+  jalankan('getLaporan', [{ jenis: jenis }], function (res) {
+    if (!res || !res.success) {
+      pemberitahuan('Gagal memuat laporan: ' + ((res && res.message) || ''), 'galat');
+      return;
+    }
+    dataLaporan = res.data || { baris: [], ringkas: {} };
+    renderLaporan();
+  }, function (err) {
+    pemberitahuan('Gagal memuat laporan: ' + pesanGalat(err), 'galat');
+  });
+}
+
+function unduhTeks_(namaBerkas, isi, tipe) {
+  var blob = new Blob([isi], { type: tipe || 'text/csv;charset=utf-8;' });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = namaBerkas;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+// Kutip nilai yang memuat pemisah/baris baru dan netralkan awalan formula
+// agar tidak dieksekusi Excel saat CSV dibuka.
+function csvAman_(v) {
+  var s = String(v === null || v === undefined ? '' : v);
+  if (/^[=+@\t\r]/.test(s) || (s.charAt(0) === '-' && s.length > 1)) s = "'" + s;
+  if (/[;"\r\n]/.test(s)) s = '"' + s.replace(/"/g, '""') + '"';
+  return s;
+}
+
+function eksporCsvLaporan() {
+  var jenis = nilaiEl_('laporanJenis') || 'bulanan';
+  var baris = (dataLaporan && dataLaporan.baris) || [];
+  if (!baris.length) {
+    pemberitahuan('Tidak ada data untuk diekspor.', 'info');
+    return;
+  }
+  var kolom = kolomLaporan_(jenis);
+  var isi = kolom.map(function (k) { return csvAman_(k.label); }).join(';') + '\r\n';
+  baris.forEach(function (b) {
+    isi += nilaiCsvLaporan_(jenis, b).map(csvAman_).join(';') + '\r\n';
+  });
+  unduhTeks_('laporan-' + jenis + '.csv', '\ufeff' + isi);
+  pemberitahuan('CSV laporan diunduh.', 'sukses');
+}
+
+function renderCetakLaporan() {
+  var jenis = nilaiEl_('laporanJenis') || 'bulanan';
+  var judul = {
+    bulanan: 'Rekap penerimaan dan pengeluaran per bulan',
+    kategori: 'Penerimaan per kategori',
+    kelas: 'Rekap per kelas',
+    tunggakan: 'Tunggakan per taruna'
+  }[jenis] || 'Laporan';
+  var kolom = kolomLaporan_(jenis);
+  var baris = (dataLaporan && dataLaporan.baris) || [];
+  var ringkas = (dataLaporan && dataLaporan.ringkas) || {};
+
+  var html = '<div class="kop-sekolah"><strong>SMK Maritim Nusantara Kupang</strong>' +
+    '<div>Kupang, Nusa Tenggara Timur</div></div>' +
+    '<h2 class="kuitansi-judul">' + escapeHtml(judul) + '</h2>' +
+    '<div class="kuitansi-meta"><span>Dicetak ' + escapeHtml(tanggalPanjang(hariIniIso_())) +
+    ' ' + escapeHtml(jamSekarang()) + '</span><span>' + baris.length + ' baris</span></div>' +
+    '<table class="tabel-cetak"><thead><tr>' +
+    kolom.map(function (k) { return '<th>' + escapeHtml(k.label) + '</th>'; }).join('') +
+    '</tr></thead><tbody>';
+  baris.forEach(function (b) {
+    html += '<tr>' + kolom.map(function (k) {
+      var isi = typeof k.nilai === 'function' ? k.nilai(b) : b[k.kunci];
+      return '<td>' + escapeHtml(isi) + '</td>';
+    }).join('') + '</tr>';
+  });
+  html += '</tbody></table>' +
+    '<div class="kuitansi-total"><span>Penerimaan / pengeluaran / selisih</span><strong>' +
+    rupiahRingkas_(ringkas.penerimaan) + ' / ' + rupiahRingkas_(ringkas.pengeluaran) + ' / ' +
+    rupiahRingkas_(ringkas.saldo) + '</strong></div>';
+  return html;
+}
+
+function bukaCetakLaporan() {
+  var scrim = document.getElementById('scrimCetakLaporan');
+  if (!scrim) return;
+  var isi = document.getElementById('isiCetakLaporan');
+  if (isi) isi.innerHTML = renderCetakLaporan();
+  scrim.hidden = false;
+}
+
+// ==== PANEL (form taruna + impor) ====
+function tutupPanelSemua_() {
+  var tertutup = false;
+  ['scrimFormTaruna', 'scrimImporTaruna', 'scrimFormPotongan',
+    'scrimGenerateTagihan', 'scrimTagihanManual', 'scrimSesuaikanTagihan',
+    'scrimCatatPembayaran', 'scrimKuitansi', 'scrimSuratTunggakan', 'scrimCatatPengeluaran',
+    'scrimCetakLaporan', 'scrimFormPengguna'].forEach(function (id) {
+    var el = document.getElementById(id);
+    if (el && !el.hidden) { el.hidden = true; tertutup = true; }
+  });
+  return tertutup;
+}
+
+function isiFormTaruna(data) {
+  var v = data || {};
+  ['Nisn', 'Nit', 'Nama', 'Angkatan', 'Rombel', 'EmailSiswa', 'EmailOrtu', 'Catatan']
+    .forEach(function (k) {
+      var el = document.getElementById('form' + k);
+      if (el) el.value = v[k.charAt(0).toLowerCase() + k.slice(1)] || '';
+    });
+  var jk = document.getElementById('formJk');
+  if (jk) jk.value = v.jenisKelamin || '';
+  var tingkat = document.getElementById('formTingkat');
+  if (tingkat) tingkat.value = v.tingkat || '';
+  var program = document.getElementById('formProgram');
+  if (program) program.value = v.program || '';
+  var status = document.getElementById('formStatus');
+  if (status) status.value = v.status || 'Aktif';
+  var tanggal = document.getElementById('formTanggalMasuk');
+  if (tanggal) tanggal.value = v.tanggalMasuk || '';
+}
+
+function bukaFormTaruna(nisn) {
+  var scrim = document.getElementById('scrimFormTaruna');
+  if (!scrim) return;
+  var taruna = null;
+  if (nisn) {
+    dataTaruna.forEach(function (t) { if (t.nisn === nisn) taruna = t; });
+  }
+  nisnPanelTaruna = taruna ? taruna.nisn : '';
+  isiTeks('judulFormTaruna', taruna ? 'Ubah data taruna' : 'Tambah taruna');
+  isiFormTaruna(taruna);
+  var wali = !!(sesiAktif && sesiAktif.peran === 'Wali Kelas');
+  if (wali && !taruna && sesiAktif.kelasWali) {
+    var bagian = String(sesiAktif.kelasWali).split(/\s+/);
+    aturNilaiKotak_('formTingkat', bagian[0] || '');
+    aturNilaiKotak_('formProgram', bagian[1] || '');
+    aturNilaiKotak_('formRombel', bagian[2] || '');
+  }
+  ['formTingkat', 'formProgram', 'formRombel'].forEach(function (id) {
+    var el = document.getElementById(id);
+    if (el) el.disabled = wali;
+  });
+  scrim.hidden = false;
+  var nisnInput = document.getElementById('formNisn');
+  if (nisnInput) nisnInput.focus();
+}
+
+function simpanFormTaruna(e) {
+  e.preventDefault();
+  if (kirimMenunggu) return;
+  var d = {
+    nisn: nilaiKotak_('formNisn'),
+    nit: nilaiKotak_('formNit'),
+    nama: nilaiKotak_('formNama'),
+    jenisKelamin: nilaiKotak_('formJk'),
+    angkatan: nilaiKotak_('formAngkatan'),
+    tingkat: nilaiKotak_('formTingkat'),
+    program: nilaiKotak_('formProgram'),
+    rombel: nilaiKotak_('formRombel'),
+    status: nilaiKotak_('formStatus'),
+    emailSiswa: nilaiKotak_('formEmailSiswa'),
+    emailOrtu: nilaiKotak_('formEmailOrtu'),
+    tanggalMasuk: nilaiKotak_('formTanggalMasuk'),
+    catatan: nilaiKotak_('formCatatan')
+  };
+  if (!d.nama) {
+    pemberitahuan('Nama wajib diisi.', 'galat');
+    return;
+  }
+
+  var fn = nisnPanelTaruna ? 'perbaruiTaruna' : 'simpanTaruna';
+  var args = nisnPanelTaruna ? [d, nisnPanelTaruna] : [d];
+
+  kirimMenunggu = true;
+  kunciTombol_('btnSimpanFormTaruna');
+  jalankan(fn, args, function (res) {
+    kirimMenunggu = false;
+    bukaTombol_('btnSimpanFormTaruna');
+    if (!res || !res.success) {
+      pemberitahuan((res && res.message) || 'Gagal menyimpan data taruna.', 'galat');
+      return;
+    }
+    pemberitahuan(res.message || 'Tersimpan.', 'sukses');
+    tutupPanelSemua_();
+    muatTaruna();
+  }, function (err) {
+    kirimMenunggu = false;
+    bukaTombol_('btnSimpanFormTaruna');
+    pemberitahuan('Gagal menyimpan data taruna: ' + pesanGalat(err), 'galat');
+  });
+}
+
+function konfirmasiHapusTaruna(nisn) {
+  if (!window.confirm('Hapus data taruna NISN ' + nisn + '?')) return;
+  jalankan('hapusTaruna', [nisn], function (res) {
+    if (!res || !res.success) {
+      pemberitahuan((res && res.message) || 'Gagal menghapus data taruna.', 'galat');
+      return;
+    }
+    pemberitahuan(res.message || 'Data taruna dihapus.', 'sukses');
+    muatTaruna();
+  });
+}
+
+// Undang ortu/siswa: form pengguna terisi email + NISN taruna, peran Siswa/Ortu.
+// PIN awal diberikan admin karena email Google orang tua tidak terbaca web app.
+function bukaUndangOrtu_(nisn) {
+  var t = (dataTaruna || []).filter(function (x) { return x.nisn === nisn; })[0];
+  if (!t) return;
+  var email = String(t.emailOrtu || t.emailSiswa || "").trim();
+  switchPage('pengguna');
+  bukaFormPengguna({
+    email: email, nama: email ? 'Ortu ' + t.nama : '', peran: 'Siswa/Ortu',
+    nisn: t.nisn, kelas: '', aktif: true
+  });
+  pemberitahuan(email
+    ? 'Isi PIN awal, simpan, lalu berikan email + PIN itu ke orang tua.'
+    : 'Email ortu belum ada di data taruna: isi email + PIN, lalu berikan ke orang tua.', 'info');
+}
+
+function klikAksiTaruna(e) {
+  var t = e.target;
+  while (t && t.getAttribute && !t.getAttribute('data-aksi')) t = t.parentNode;
+  var aksi = t && t.getAttribute ? t.getAttribute('data-aksi') : null;
+  var nisn = t && t.getAttribute ? t.getAttribute('data-nisn') : null;
+  if (!aksi || !nisn) return;
+  if (aksi === 'ubah') bukaFormTaruna(nisn);
+  else if (aksi === 'hapus') konfirmasiHapusTaruna(nisn);
+  else if (aksi === 'akun') bukaUndangOrtu_(nisn);
+}
+
+// ==== PANEL IMPOR ====
+function bukaImporTaruna() {
+  resetImporTaruna();
+  var input = document.getElementById('fileImporTaruna');
+  if (input) input.value = '';
+  var scrim = document.getElementById('scrimImporTaruna');
+  if (scrim) scrim.hidden = false;
+}
+
+function resetImporTaruna() {
+  berkasImporTaruna = null;
+  kunciTombol_('btnPratinjauImpor'); // belum ada berkas -> tetap mati
+  var konfirm = document.getElementById('btnKonfirmImpor');
+  if (konfirm) konfirm.hidden = true;
+  var hasil = document.getElementById('hasilImporTaruna');
+  if (hasil) hasil.hidden = true;
+  var ringkas = document.getElementById('imporRingkas');
+  if (ringkas) ringkas.innerHTML = '';
+  renderTabel(document.getElementById('tabelImporTaruna'),
+    [{ label: 'Baris', kunci: 'baris' }, { label: 'Status', kunci: 'status' },
+     { label: 'Alasan', kunci: 'alasan' }], []);
+}
+
+function tombolPratinjauSiap_() {
+  var el = document.getElementById('btnPratinjauImpor');
+  if (el) el.disabled = !berkasImporTaruna;
+}
+
+function pilihBerkasImporTaruna(e) {
+  var input = e.target;
+  var berkas = input && input.files && input.files[0];
+  resetImporTaruna();
+  if (!berkas) return;
+  var pembaca = new FileReader();
+  pembaca.onload = function () {
+    berkasImporTaruna = { nama: berkas.name, dataUrl: pembaca.result };
+    tombolPratinjauSiap_();
+  };
+  pembaca.onerror = function () {
+    pemberitahuan('Gagal membaca berkas.', 'galat');
+    tombolPratinjauSiap_();
+  };
+  pembaca.readAsDataURL(berkas);
+}
+
+function pratinjauImporTaruna() {
+  if (!berkasImporTaruna) return;
+  kunciTombol_('btnPratinjauImpor');
+  jalankan('pratinjauImpor', ['taruna', berkasImporTaruna], function (res) {
+    tombolPratinjauSiap_();
+    if (!res || !res.success) {
+      pemberitahuan((res && res.message) || 'Gagal membaca berkas impor.', 'galat');
+      return;
+    }
+    tampilHasilImpor(res.data);
+    var konfirm = document.getElementById('btnKonfirmImpor');
+    if (konfirm) konfirm.hidden = !(res.data && res.data.berhasil > 0);
+    pemberitahuan(res.message || 'Pratinjau siap.', 'info');
+  }, function (err) {
+    tombolPratinjauSiap_();
+    pemberitahuan('Gagal membaca berkas impor: ' + pesanGalat(err), 'galat');
+  });
+}
+
+function jalankanImporTaruna() {
+  if (!berkasImporTaruna || kirimMenunggu) return;
+  kirimMenunggu = true;
+  kunciTombol_('btnKonfirmImpor');
+  jalankan('jalankanImpor', ['taruna', berkasImporTaruna], function (res) {
+    kirimMenunggu = false;
+    tombolPratinjauSiap_();
+    var konfirm = document.getElementById('btnKonfirmImpor');
+    if (konfirm) konfirm.hidden = true;
+    if (!res || !res.success) {
+      pemberitahuan((res && res.message) || 'Impor gagal.', 'galat');
+      return;
+    }
+    tampilHasilImpor(res.data);
+    pemberitahuan(res.message || 'Impor selesai.', 'sukses');
+    muatTaruna();
+  }, function (err) {
+    kirimMenunggu = false;
+    tombolPratinjauSiap_();
+    pemberitahuan('Gagal mengimpor: ' + pesanGalat(err), 'galat');
+  });
+}
+
+// Tampilkan laporan: ringkasan hitung + daftar dilewati/gagal + alasan.
+function tampilHasilImpor(laporan) {
+  var hasil = document.getElementById('hasilImporTaruna');
+  var ringkas = document.getElementById('imporRingkas');
+  if (!hasil || !ringkas) return;
+  hasil.hidden = false;
+
+  var d = laporan || {};
+  ringkas.innerHTML =
+    '<span>Baris: <b>' + (d.baris || 0) + '</b></span>' +
+    '<span>Berhasil: <b>' + (d.berhasil || 0) + '</b></span>' +
+    '<span>Dilewati: <b>' + ((d.dilewati || []).length) + '</b></span>' +
+    '<span>Gagal: <b>' + ((d.gagal || []).length) + '</b></span>';
+
+  var catatan = [];
+  (d.dilewati || []).forEach(function (x) {
+    catatan.push({ baris: x.baris, status: 'Dilewati', alasan: x.alasan });
+  });
+  (d.gagal || []).forEach(function (x) {
+    catatan.push({ baris: x.baris, status: 'Gagal', alasan: x.alasan });
+  });
+  catatan.sort(function (a, b) { return a.baris - b.baris; });
+
+  renderTabel(document.getElementById('tabelImporTaruna'), [
+    { label: 'Baris', kunci: 'baris', kelas: 'num' },
+    { label: 'Status', kunci: 'status' },
+    { label: 'Alasan', kunci: 'alasan' }
+  ], catatan);
+}
+
+// ==== PENGATURAN & REFERENSI (klien) ====
+var dataJenisBiaya = [];
+var dataTarif = [];
+var dataKategoriPengeluaran = [];
+
+function muatPengaturan() {
+  jalankan('getPengaturan', [], function (res) {
+    if (!res || !res.success) {
+      pemberitahuan('Gagal memuat pengaturan: ' + ((res && res.message) || ''), 'galat');
+      return;
+    }
+    isiFormPengaturan_(res.data || {});
+  }, function (err) {
+    pemberitahuan('Gagal memuat pengaturan: ' + pesanGalat(err), 'galat');
+  });
+
+  jalankan('getJenisBiaya', [], function (res) {
+    if (!res || !res.success) {
+      pemberitahuan('Gagal memuat jenis biaya: ' + ((res && res.message) || ''), 'galat');
+      return;
+    }
+    dataJenisBiaya = res.data || [];
+    renderJenisBiaya();
+    isiOpsiJenisBiayaTarif_();
+  }, function (err) {
+    pemberitahuan('Gagal memuat jenis biaya: ' + pesanGalat(err), 'galat');
+  });
+
+  jalankan('getTarif', [], function (res) {
+    if (!res || !res.success) {
+      pemberitahuan('Gagal memuat tarif: ' + ((res && res.message) || ''), 'galat');
+      return;
+    }
+    dataTarif = res.data || [];
+    renderTarif();
+  }, function (err) {
+    pemberitahuan('Gagal memuat tarif: ' + pesanGalat(err), 'galat');
+  });
+
+  jalankan('getKategoriPengeluaran', [], function (res) {
+    if (!res || !res.success) {
+      pemberitahuan('Gagal memuat kategori pengeluaran: ' + ((res && res.message) || ''), 'galat');
+      return;
+    }
+    dataKategoriPengeluaran = res.data || [];
+    renderKategoriPengeluaran();
+  }, function (err) {
+    pemberitahuan('Gagal memuat kategori pengeluaran: ' + pesanGalat(err), 'galat');
+  });
+}
+
+function aturNilaiKotak_(id, nilai) {
+  var el = document.getElementById(id);
+  if (el) el.value = nilai === null || nilai === undefined ? '' : String(nilai);
+}
+
+function isiFormPengaturan_(d) {
+  aturNilaiKotak_('setTahunAjaran', d.tahunAjaranAktif);
+  aturNilaiKotak_('setNamaSekolah', d.namaSekolah);
+  aturNilaiKotak_('setAlamatSekolah', d.alamatSekolah);
+  aturNilaiKotak_('setNpsn', d.npsn);
+  aturNilaiKotak_('setSaldoAwalKas', d.saldoAwalKas);
+  aturNilaiKotak_('setSaldoAwalBank', d.saldoAwalBank);
+  aturNilaiKotak_('setTanggalSaldoAwal', d.tanggalSaldoAwal);
+}
+
+// Input nominal hanya menerima angka; buang pemisah yang dipebuh orang.
+function angkaNominal_(nilai) {
+  var s = String(nilai === null || nilai === undefined ? '' : nilai).replace(/[^0-9]/g, '');
+  return s ? Number(s) : 0;
+}
+
+// ---- Kartu identitas & saldo awal ---- keduanya simpanPengaturan.
+function simpanPengaturanIdentitas(e) {
+  if (e && e.preventDefault) e.preventDefault();
+  var d = {
+    tahunAjaranAktif: nilaiKotak_('setTahunAjaran'),
+    namaSekolah: nilaiKotak_('setNamaSekolah'),
+    alamatSekolah: nilaiKotak_('setAlamatSekolah'),
+    npsn: nilaiKotak_('setNpsn')
+  };
+  if (!d.namaSekolah) {
+    pemberitahuan('Nama sekolah wajib diisi.', 'galat');
+    return;
+  }
+  kirimPengaturan_('simpanPengaturan', [d], 'Pengaturan identitas tersimpan.');
+}
+
+function simpanPengaturanSaldoAwal(e) {
+  if (e && e.preventDefault) e.preventDefault();
+  var d = {
+    saldoAwalKas: angkaNominal_(nilaiKotak_('setSaldoAwalKas')),
+    saldoAwalBank: angkaNominal_(nilaiKotak_('setSaldoAwalBank')),
+    tanggalSaldoAwal: nilaiKotak_('setTanggalSaldoAwal')
+  };
+  kirimPengaturan_('simpanPengaturan', [d], 'Saldo awal tersimpan.');
+}
+
+function arsipkanTahunAjaranAktif() {
+  if (!window.confirm('Buat salinan permanen spreadsheet untuk tahun ajaran aktif?')) return;
+  // Kosong = server memakai tahun ajaran aktif tersimpan, bukan isian form yang belum disimpan.
+  jalankan('arsipkanTahunAjaran', [''], function (res) {
+    if (!res || !res.success) {
+      pemberitahuan((res && res.message) || 'Gagal membuat arsip.', 'galat');
+      return;
+    }
+    pemberitahuan(res.message || 'Arsip tahun ajaran dibuat.', 'sukses');
+  }, function (err) {
+    pemberitahuan('Gagal membuat arsip: ' + pesanGalat(err), 'galat');
+  });
+}
+
+function kirimPengaturan_(fn, args, pesanSukses) {
+  if (kirimMenunggu) return;
+  kirimMenunggu = true;
+  jalankan(fn, args, function (res) {
+    kirimMenunggu = false;
+    if (!res || !res.success) {
+      pemberitahuan((res && res.message) || 'Gagal menyimpan pengaturan.', 'galat');
+      return;
+    }
+    pemberitahuan(res.message || pesanSukses, 'sukses');
+    muatPengaturan();
+  }, function (err) {
+    kirimMenunggu = false;
+    pemberitahuan('Gagal menyimpan pengaturan: ' + pesanGalat(err), 'galat');
+  });
+}
+
+// ---- Jenis biaya ----
+function chipAktifJenis_(aktif) {
+  return aktif
+    ? '<span class="chip chip-lunas">Aktif</span>'
+    : '<span class="chip chip-sebagian">Dinonaktifkan</span>';
+}
+
+function aksiBarisJenisBiaya_(j) {
+  if (!j.aktif || !sesiAktif || !sesiAktif.bisaTulis) return '';
+  return '<button class="btn btn-kecil" type="button" data-aksi="nonaktif" data-kode="' +
+    escapeHtml(j.kode) + '">Nonaktifkan</button>';
+}
+
+function renderJenisBiaya() {
+  renderTabel(document.getElementById('tabelJenisBiaya'), [
+    { label: 'Kode', kunci: 'kode', kelas: 'td-bukti num' },
+    { label: 'Nama', kunci: 'nama' },
+    { label: 'Periode', kunci: 'periode' },
+    { label: 'Urutan', kunci: 'urutan', kelas: 'num' },
+    { label: 'Status', nilai: chipAktifJenis_, html: true },
+    { label: 'Aksi', nilai: aksiBarisJenisBiaya_, html: true, kelas: 'td-aksi' }
+  ], dataJenisBiaya);
+}
+
+// Kode lama diketik â†’ isi form dari catatan tersimpan, termasuk status, agar
+// simpan ulang kode nonaktif tidak mengaktifkannya kembali secara tak sengaja.
+function isiFormJenisBiaya_(kode) {
+  var cari = String(kode === null || kode === undefined ? '' : kode).toUpperCase();
+  if (!cari) return;
+  var j = (dataJenisBiaya || []).find(function (r) {
+    return String(r.kode === null || r.kode === undefined ? '' : r.kode).toUpperCase() === cari;
+  });
+  if (!j) return;
+  aturNilaiKotak_('setNamaJenisBiaya', j.nama);
+  aturNilaiKotak_('setPeriodeJenisBiaya', j.periode);
+  aturNilaiKotak_('setUrutanJenisBiaya', j.urutan);
+  aturNilaiKotak_('setAktifJenisBiaya', j.aktif ? 'ya' : 'tidak');
+}
+
+function simpanFormJenisBiaya() {
+  var kode = nilaiKotak_('setKodeJenisBiaya').toUpperCase();
+  var nama = nilaiKotak_('setNamaJenisBiaya');
+  if (!kode || !nama) {
+    pemberitahuan('Kode dan nama jenis biaya wajib diisi.', 'galat');
+    return;
+  }
+  var urutanRaw = nilaiKotak_('setUrutanJenisBiaya');
+  var d = {
+    kode: kode,
+    nama: nama,
+    periode: nilaiKotak_('setPeriodeJenisBiaya') || 'Bulanan',
+    urutan: urutanRaw ? (Number(urutanRaw) || 999) : 999,
+    aktif: nilaiKotak_('setAktifJenisBiaya') !== 'tidak'
+  };
+  if (kirimMenunggu) return;
+  kirimMenunggu = true;
+  jalankan('simpanJenisBiaya', [d], function (res) {
+    kirimMenunggu = false;
+    if (!res || !res.success) {
+      pemberitahuan((res && res.message) || 'Gagal menyimpan jenis biaya.', 'galat');
+      return;
+    }
+    pemberitahuan(res.message || 'Jenis biaya tersimpan.', 'sukses');
+    aturNilaiKotak_('setKodeJenisBiaya', '');
+    aturNilaiKotak_('setNamaJenisBiaya', '');
+    aturNilaiKotak_('setUrutanJenisBiaya', '');
+    aturNilaiKotak_('setAktifJenisBiaya', 'ya');
+    muatPengaturan();
+  }, function (err) {
+    kirimMenunggu = false;
+    pemberitahuan('Gagal menyimpan jenis biaya: ' + pesanGalat(err), 'galat');
+  });
+}
+
+function nonaktifkanJenisBiaya_(kode) {
+  if (!window.confirm('Nonaktifkan jenis biaya ' + kode + '?')) return;
+  jalankan('nonaktifkanJenisBiaya', [kode], function (res) {
+    if (!res || !res.success) {
+      pemberitahuan((res && res.message) || 'Gagal menonaktifkan jenis biaya.', 'galat');
+      return;
+    }
+    pemberitahuan(res.message || 'Jenis biaya dinonaktifkan.', 'sukses');
+    muatPengaturan();
+  });
+}
+
+function klikAksiJenisBiaya_(e) {
+  var t = e.target;
+  while (t && t.getAttribute && !t.getAttribute('data-aksi')) t = t.parentNode;
+  var aksi = t && t.getAttribute ? t.getAttribute('data-aksi') : null;
+  var kode = t && t.getAttribute ? t.getAttribute('data-kode') : null;
+  if (aksi === 'nonaktif' && kode) nonaktifkanJenisBiaya_(kode);
+}
+
+// ---- Tarif per angkatan ----
+function isiOpsiJenisBiayaTarif_() {
+  var el = document.getElementById('setTarifJenisBiaya');
+  if (!el) return;
+  var terpilih = el.value;
+  var html = '';
+  dataJenisBiaya.forEach(function (j) {
+    html += '<option value="' + escapeHtml(j.kode) + '">' +
+      escapeHtml(j.kode + ' (' + j.nama + ')') + '</option>';
+  });
+  el.innerHTML = html;
+  if (terpilih && dataJenisBiaya.some(function (j) { return j.kode === terpilih; })) {
+    el.value = terpilih;
+  }
+}
+
+function renderTarif() {
+  renderTabel(document.getElementById('tabelTarif'), [
+    { label: 'Jenis biaya', kunci: 'jenisBiaya', kelas: 'td-bukti num' },
+    { label: 'Tahun masuk', kunci: 'angkatan' },
+    { label: 'Tahun ajaran', kunci: 'tahunAjaran' },
+    { label: 'Nominal', nilai: function (r) { return rupiah(r.nominal); }, kelas: 'td-jumlah num' }
+  ], dataTarif);
+}
+
+function simpanFormTarif(e) {
+  if (e && e.preventDefault) e.preventDefault();
+  var d = {
+    jenisBiaya: nilaiKotak_('setTarifJenisBiaya'),
+    angkatan: nilaiKotak_('setTarifAngkatan'),
+    tahunAjaran: nilaiKotak_('setTarifTahunAjaran'),
+    nominal: angkaNominal_(nilaiKotak_('setTarifNominal'))
+  };
+  if (!d.jenisBiaya || !d.angkatan || !d.tahunAjaran) {
+    pemberitahuan('Jenis biaya, angkatan, dan tahun ajaran wajib diisi.', 'galat');
+    return;
+  }
+  if (kirimMenunggu) return;
+  kirimMenunggu = true;
+  jalankan('simpanTarif', [d], function (res) {
+    kirimMenunggu = false;
+    if (!res || !res.success) {
+      pemberitahuan((res && res.message) || 'Gagal menyimpan tarif.', 'galat');
+      return;
+    }
+    pemberitahuan(res.message || 'Tarif tersimpan.', 'sukses');
+    muatPengaturan();
+  }, function (err) {
+    kirimMenunggu = false;
+    pemberitahuan('Gagal menyimpan tarif: ' + pesanGalat(err), 'galat');
+  });
+}
+
+// ---- Kategori pengeluaran ----
+function renderKategoriPengeluaran() {
+  renderTabel(document.getElementById('tabelKategoriPengeluaran'), [
+    { label: 'Kategori', kunci: 'nama' },
+    { label: 'Status', nilai: chipAktifJenis_, html: true }
+  ], dataKategoriPengeluaran);
+}
+
+function simpanFormKategoriPengeluaran(e) {
+  if (e && e.preventDefault) e.preventDefault();
+  var nama = nilaiKotak_('setKategoriPengeluaran');
+  if (!nama) {
+    pemberitahuan('Nama kategori wajib diisi.', 'galat');
+    return;
+  }
+  if (kirimMenunggu) return;
+  kirimMenunggu = true;
+  jalankan('simpanKategoriPengeluaran', [{ nama: nama, aktif: true }], function (res) {
+    kirimMenunggu = false;
+    if (!res || !res.success) {
+      pemberitahuan((res && res.message) || 'Gagal menyimpan kategori pengeluaran.', 'galat');
+      return;
+    }
+    pemberitahuan(res.message || 'Kategori pengeluaran tersimpan.', 'sukses');
+    aturNilaiKotak_('setKategoriPengeluaran', '');
+    muatPengaturan();
+  }, function (err) {
+    kirimMenunggu = false;
+    pemberitahuan('Gagal menyimpan kategori pengeluaran: ' + pesanGalat(err), 'galat');
+  });
+}
+
+</script>

@@ -1,0 +1,742 @@
+<script>
+/* ============================================================
+   Scripts.html — logika klien aplikasi keuangan sekolah
+   Dimuat lewat include('Scripts') di Index.html.
+   Semua panggilan server lewat jalankan() agar tetap hidup
+   saat dibuka sebagai preview lokal (tanpa google.script).
+   ============================================================ */
+
+// ==== KONSTANTA ====
+var LABEL_HALAMAN = {
+  dashboard: 'Ringkasan keuangan',
+  penerimaan: 'Penerimaan',
+  pengeluaran: 'Pengeluaran',
+  tagihan: 'Tagihan dan tunggakan',
+  potongan: 'Beasiswa dan keringanan',
+  taruna: 'Data taruna',
+  laporan: 'Laporan',
+  pengguna: 'Pengguna dan peran',
+  log: 'Log audit',
+  pengaturan: 'Tarif dan pengaturan'
+};
+
+var LABEL_PERAN = {
+  Admin: 'Akses penuh',
+  Bendahara: 'Bendahara',
+  Bendahara: 'Bendahara',
+  Kepsek: 'Kepala sekolah',
+  Viewer: 'Lihat saja',
+  'Wali Kelas': 'Wali kelas',
+  'Siswa/Ortu': 'Siswa/Orang tua'
+};
+
+var BULAN_PENDEK = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun',
+  'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+var BULAN_PANJANG = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+  'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+
+// ==== KEADAAN ====
+var sesiAktif = null;
+var halamanAktif = 'dashboard';
+var sudahDimuat = {};
+
+// Halaman yang datanya berubah karena mutasi: paksa dimuat ulang saat dibuka.
+function lupakanHalaman_(daftar) {
+  (daftar || []).forEach(function (p) { delete sudahDimuat[p]; });
+}
+
+// ==== KOMUNIKASI SERVER ====
+// jalankan('getSesi', [], function (res) { ... }, function (err) { ... });
+function jalankan(fnName, args, onSuccess, onFail) {
+  var argumen = args || [];
+  var sukses = typeof onSuccess === 'function' ? onSuccess : function () {};
+  var gagal = typeof onFail === 'function' ? onFail : function (err) {
+    pemberitahuan('Gagal memanggil server: ' + pesanGalat(err), 'galat');
+  };
+
+  if (typeof google === 'undefined' || !google.script || !google.script.run) {
+    gagal({ message: 'google.script.run tidak tersedia (mode preview).' });
+    return;
+  }
+
+  var runner = google.script.run
+    .withSuccessHandler(sukses)
+    .withFailureHandler(gagal);
+
+  if (typeof runner[fnName] !== 'function') {
+    gagal({ message: 'Fungsi server ' + fnName + ' belum tersedia.' });
+    return;
+  }
+
+  runner[fnName].apply(runner, argumen);
+}
+
+function pesanGalat(err) {
+  if (!err) return 'kesalahan tidak diketahui';
+  return err.message || String(err);
+}
+
+// ==== NAVIGASI HALAMAN ====
+function switchPage(p) {
+  // Wali kelas hanya punya halaman Data taruna; hash langsung pun dialihkan.
+  if (sesiAktif && sesiAktif.peran === 'Wali Kelas' && p !== 'taruna') p = 'taruna';
+  var target = document.getElementById('page-' + p);
+  if (!target) return null;
+
+  var semua = document.querySelectorAll('.page-section');
+  for (var i = 0; i < semua.length; i++) {
+    var aktif = semua[i] === target;
+    semua[i].hidden = !aktif;
+    semua[i].classList.toggle('active', aktif);
+  }
+
+  var tautan = document.querySelectorAll('#sidebar .nav a[data-page]');
+  for (var j = 0; j < tautan.length; j++) {
+    var ini = tautan[j].getAttribute('data-page') === p;
+    tautan[j].classList.toggle('active', ini);
+    if (ini) tautan[j].setAttribute('aria-current', 'page');
+    else tautan[j].removeAttribute('aria-current');
+  }
+
+  halamanAktif = p;
+  tutupSidebar();
+  window.scrollTo(0, 0);
+  muatHalaman(p);
+  return p;
+}
+
+// Pemuat per halaman dipanggil sekali saat halaman pertama kali dibuka.
+function muatHalaman(p) {
+  if (sudahDimuat[p]) {
+    // Dashboard selalu disegarkan: angkanya berubah setiap ada transaksi.
+    if (p === 'dashboard') muatDashboard();
+    return;
+  }
+  sudahDimuat[p] = true;
+  var pemuat = PEMUAT[p];
+  if (typeof pemuat === 'function') pemuat();
+}
+
+var PEMUAT = {
+  dashboard: function () { muatDashboard(); },
+  penerimaan: function () { muatPenerimaan(); },
+  pengeluaran: function () { muatPengeluaran(); },
+  tagihan: function () { muatTagihan(); },
+  potongan: function () { muatPotongan(); },
+  taruna: function () { muatTaruna(); },
+  laporan: function () { muatLaporan(); },
+  pengguna: function () { muatPengguna(); },
+  log: function () { muatLog(); },
+  pengaturan: function () { muatPengaturan(); }
+};
+
+function menyusul(namaHalaman) {
+  pemberitahuan('Halaman ' + namaHalaman + ' menyusul.', 'info');
+}
+
+// ==== LACI MENU (B28) ====
+function toggleSidebar() {
+  var sidebar = document.getElementById('sidebar');
+  if (!sidebar) return;
+  aturSidebar(!sidebar.classList.contains('open'));
+}
+
+function aturSidebar(buka) {
+  var sidebar = document.getElementById('sidebar');
+  var scrim = document.getElementById('scrim');
+  var tombol = document.getElementById('menuBtn');
+  if (sidebar) sidebar.classList.toggle('open', buka);
+  if (scrim) {
+    scrim.classList.toggle('open', buka);
+    scrim.hidden = !buka;
+  }
+  if (tombol) tombol.setAttribute('aria-expanded', String(buka));
+}
+
+function tutupSidebar() {
+  aturSidebar(false);
+}
+
+// ==== SESI ====
+function mulai() {
+  jalankan('getSesi', [], function (res) {
+    var data = res && res.data ? res.data : null;
+    if (!res || !res.success || !data) {
+      gagalMemuat((res && res.message) || 'Sesi tidak bisa dibaca.');
+      return;
+    }
+    terapkanSesi_(data);
+  }, function (err) {
+    gagalMemuat('Tidak bisa menghubungi server: ' + pesanGalat(err));
+  });
+}
+
+// Label versi dari server (APP_VERSI), bukan hardcode di HTML.
+function tampilkanVersi_(data) {
+  var v = data && data.versi ? 'versi ' + data.versi : 'versi';
+  isiTeks('versiLogin', v);
+  isiTeks('versiSidebar', v);
+}
+
+// Routing tunggal berdasarkan status sesi dari server.
+function terapkanSesi_(data) {
+  if (!data) { gagalMemuat('Sesi kosong.'); return; }
+  tampilkanVersi_(data);
+  if (data.status === 'belum_login') {
+    tampilLogin(data);
+    return;
+  }
+  if (data.status === 'ditolak') {
+    tampilTolak(data);
+    return;
+  }
+  sesiAktif = data;
+  if (data.modeSiswa) {
+    tampilSiswa(data);
+    return;
+  }
+  tampilUtama(data);
+}
+
+function tampilLogin(data) {
+  sembunyikanSemua();
+  var view = document.getElementById('viewLogin');
+  if (!view) return;
+  if (data && data.email) aturNilaiKotak_('loginEmail', data.email);
+  view.hidden = false;
+  var el = document.getElementById(data && data.email ? 'loginPin' : 'loginEmail');
+  if (el) el.focus();
+}
+
+function masukAplikasi(e) {
+  e.preventDefault();
+  if (kirimMenunggu) return;
+  var email = nilaiKotak_('loginEmail');
+  var pin = nilaiKotak_('loginPin');
+  if (!email || !pin) {
+    pemberitahuan('Email dan PIN wajib diisi.', 'galat');
+    return;
+  }
+  kirimMenunggu = true;
+  kunciTombol_('btnLogin');
+  jalankan('login', [{ email: email, pin: pin }], function (res) {
+    kirimMenunggu = false;
+    bukaTombol_('btnLogin');
+    if (!res || !res.success) {
+      pemberitahuan((res && res.message) || 'Gagal masuk.', 'galat');
+      return;
+    }
+    aturNilaiKotak_('loginPin', '');
+    terapkanSesi_(res.data || {});
+  }, function (err) {
+    kirimMenunggu = false;
+    bukaTombol_('btnLogin');
+    pemberitahuan('Gagal masuk: ' + pesanGalat(err), 'galat');
+  });
+}
+
+function keluarAplikasi() {
+  jalankan('logout', [], function () {
+    sesiAktif = null;
+    tampilLogin({});
+  }, function (err) {
+    pemberitahuan('Gagal keluar: ' + pesanGalat(err), 'galat');
+  });
+}
+
+function sembunyikanSemua() {
+  ['viewMemuat', 'viewTolak', 'viewLogin', 'viewUtama', 'viewSiswa'].forEach(function (id) {
+    var el = document.getElementById(id);
+    if (el) el.hidden = true;
+  });
+}
+
+function gagalMemuat(pesan) {
+  var el = document.getElementById('viewMemuat');
+  if (!el) return;
+  el.hidden = false;
+  el.textContent = pesan;
+}
+
+// Layar tolak hanya memuat identitas; tanpa angka keuangan apa pun (B5).
+function tampilTolak(data) {
+  sembunyikanSemua();
+  isiTeks('tolakEmail', (data && data.email) || '(email tidak terbaca)');
+  document.getElementById('viewTolak').hidden = false;
+}
+
+// Mode siswa/ortu (B25) diisi pada Task 11.
+function tampilSiswa(data) {
+  sembunyikanSemua();
+  var view = document.getElementById('viewSiswa');
+  if (!view) return;
+  view.hidden = false;
+  view.innerHTML =
+    '<div class="siswa-wrap">' +
+      '<div class="topbar"><div><h1 class="page-title">Tagihan saya</h1>' +
+      '<p class="page-sub" id="subSiswa">' + escapeHtml((data && data.nama) || '') + '</p></div>' +
+      '<div class="topbar-actions">' +
+      '<button class="btn btn-kecil" type="button" id="btnKeluarSiswa">Keluar</button>' +
+      '</div></div>' +
+      '<div class="grid-kpi" id="kpiSiswa"></div>' +
+      '<div class="card"><h2 class="card-title">Tagihan</h2>' +
+        '<div class="table-wrap"><table><thead><tr>' +
+        '<th>Jenis Biaya</th><th>Periode</th><th>Nominal</th><th>Sisa</th><th>Status</th>' +
+        '</tr></thead><tbody id="tabelTagihanSiswa"></tbody></table></div></div>' +
+      '<div class="card"><h2 class="card-title">Riwayat pembayaran</h2>' +
+        '<div class="table-wrap"><table><thead><tr>' +
+        '<th>Tanggal</th><th>No. Bukti</th><th>Taruna</th><th>Jumlah</th><th>Metode</th><th>Status</th>' +
+        '</tr></thead><tbody id="tabelRiwayatSiswa"></tbody></table></div></div>' +
+    '</div>';
+  var tombolKeluarSiswa = document.getElementById('btnKeluarSiswa');
+  if (tombolKeluarSiswa) tombolKeluarSiswa.addEventListener('click', keluarAplikasi);
+  muatTagihanSiswa();
+}
+
+function renderSiswa(d) {
+  var data = d || {};
+  var ringkas = data.ringkas || {};
+  var taruna = data.taruna || [];
+
+  var kotakKpi = document.getElementById('kpiSiswa');
+  if (kotakKpi) {
+    kotakKpi.innerHTML =
+      '<div class="card"><div class="card-label">Total tagihan</div>' +
+      '<div class="card-value num">' + rupiah(Number(ringkas.totalTagihan) || 0) + '</div></div>' +
+      '<div class="card"><div class="card-label">Sudah dibayar</div>' +
+      '<div class="card-value num">' + rupiah(Number(ringkas.totalBayar) || 0) + '</div></div>' +
+      '<div class="card card-tunggakan"><div class="card-label">Tunggakan</div>' +
+      '<div class="card-value num warn">' + rupiah(Number(ringkas.tunggakan) || 0) + '</div></div>';
+  }
+  if (taruna.length) {
+    isiTeks('subSiswa', taruna.map(function (t) {
+      return t.nama + ' · ' + t.kelas;
+    }).join('  |  '));
+  }
+
+  renderTabel(document.getElementById('tabelTagihanSiswa'), [
+    { label: 'Jenis Biaya', kunci: 'jenisBiaya' },
+    { label: 'Periode', nilai: function (t) { return periodePanjang(t.periode); } },
+    { label: 'Nominal', nilai: function (t) { return rupiah(t.nominalAkhir); }, kelas: 'td-jumlah num' },
+    { label: 'Sisa', nilai: function (t) { return rupiah(t.sisa); }, kelas: 'td-jumlah num' },
+    { label: 'Status', nilai: function (t) { return chipStatusTagihan_(t.status); }, html: true }
+  ], data.tagihan || []);
+
+  renderTabel(document.getElementById('tabelRiwayatSiswa'), [
+    { label: 'Tanggal', nilai: function (p) { return p.tanggal ? tanggalPendek(p.tanggal) : '-'; }, kelas: 'td-tanggal' },
+    { label: 'No. Bukti', kunci: 'noBukti', kelas: 'td-bukti num' },
+    { label: 'Taruna', kunci: 'taruna' },
+    { label: 'Jumlah', nilai: function (p) { return rupiah(p.jumlah); }, kelas: 'td-jumlah num' },
+    { label: 'Metode', kunci: 'metode' },
+    { label: 'Status', nilai: function (p) { return chipStatusBayar_(p.status); }, html: true }
+  ], data.riwayat || []);
+}
+
+function muatTagihanSiswa() {
+  jalankan('getTagihanSiswa', [], function (res) {
+    if (!res || !res.success) {
+      pemberitahuan((res && res.message) || 'Gagal memuat tagihan.', 'galat');
+      return;
+    }
+    renderSiswa(res.data || {});
+  }, function (err) {
+    pemberitahuan('Gagal memuat tagihan: ' + pesanGalat(err), 'galat');
+  });
+}
+
+// ==== PENGGUNA & PERAN (admin) ====
+var dataPengguna = [];
+
+function renderPengguna() {
+  renderTabel(document.getElementById('tabelPengguna'), [
+    { label: 'Email', kunci: 'email', kelas: 'td-bukti' },
+    { label: 'Nama', kunci: 'nama' },
+    { label: 'Peran', kunci: 'peran' },
+    { label: 'Kelas', nilai: function (p) { return p.kelas || '-'; } },
+    { label: 'NISN', nilai: function (p) { return p.nisn || '-'; } },
+    { label: 'PIN', nilai: function (p) {
+      return p.punyaPin
+        ? '<span class="chip chip-lunas">Ada</span>'
+        : '<span class="chip chip-sebagian">Belum</span>';
+    }, html: true },
+    { label: 'Aktif', nilai: function (p) {
+      return p.aktif ? '<span class="chip chip-lunas">Aktif</span>'
+        : '<span class="chip chip-keluar">Tidak aktif</span>';
+    }, html: true },
+    { label: 'Aksi', nilai: function (p) {
+      var html = '<button class="btn btn-kecil" type="button" data-aksi="pin" data-id="' +
+        escapeHtml(p.email) + '">Atur PIN</button>';
+      if (p.aktif) {
+        html += ' <button class="btn btn-kecil btn-hapus" type="button" data-aksi="nonaktif" data-id="' +
+          escapeHtml(p.email) + '">Nonaktifkan</button>';
+      }
+      return html;
+    }, html: true, kelas: 'td-aksi' }
+  ], dataPengguna);
+}
+
+function muatPengguna() {
+  jalankan('getPengguna', [], function (res) {
+    if (!res || !res.success) {
+      pemberitahuan('Gagal memuat pengguna: ' + ((res && res.message) || ''), 'galat');
+      return;
+    }
+    dataPengguna = res.data || [];
+    renderPengguna();
+  }, function (err) {
+    pemberitahuan('Gagal memuat pengguna: ' + pesanGalat(err), 'galat');
+  });
+}
+
+function bukaFormPengguna(pengguna) {
+  var scrim = document.getElementById('scrimFormPengguna');
+  if (!scrim) return;
+  isiTeks('judulFormPengguna', pengguna ? 'Ubah pengguna' : 'Tambah pengguna');
+  aturNilaiKotak_('formPenggunaEmail', pengguna ? pengguna.email : '');
+  aturNilaiKotak_('formPenggunaNama', pengguna ? pengguna.nama : '');
+  aturNilaiKotak_('formPenggunaKelas', pengguna ? (pengguna.kelas || '') : '');
+  aturNilaiKotak_('formPenggunaNisn', pengguna ? (pengguna.nisn || '') : '');
+  aturNilaiKotak_('formPenggunaPin', '');
+  aturNilaiKotak_('formPenggunaPeran', pengguna ? pengguna.peran : 'Bendahara');
+  aturNilaiKotak_('formPenggunaAktif', pengguna ? (pengguna.aktif ? 'ya' : 'tidak') : 'ya');
+  aturFieldKelasPengguna_();
+  scrim.hidden = false;
+  var el = document.getElementById('formPenggunaEmail');
+  if (el) el.focus();
+}
+
+function aturFieldKelasPengguna_() {
+  var peran = nilaiEl_('formPenggunaPeran');
+  var field = document.getElementById('fieldPenggunaKelas');
+  if (field) field.hidden = peran !== 'Wali Kelas';
+  var nisn = document.getElementById('fieldPenggunaNisn');
+  if (nisn) nisn.hidden = peran !== 'Siswa/Ortu';
+}
+
+function simpanFormPengguna(e) {
+  e.preventDefault();
+  if (kirimMenunggu) return;
+  var d = {
+    email: nilaiKotak_('formPenggunaEmail'),
+    nama: nilaiKotak_('formPenggunaNama'),
+    peran: nilaiEl_('formPenggunaPeran'),
+    kelas: nilaiKotak_('formPenggunaKelas'),
+    nisn: nilaiKotak_('formPenggunaNisn'),
+    pin: nilaiKotak_('formPenggunaPin'),
+    aktif: nilaiEl_('formPenggunaAktif') === 'ya'
+  };
+  if (!d.email || !d.nama) {
+    pemberitahuan('Email dan nama wajib diisi.', 'galat');
+    return;
+  }
+  if (d.peran === 'Wali Kelas' && !d.kelas) {
+    pemberitahuan('Kelas wali wajib diisi.', 'galat');
+    return;
+  }
+  kirimMenunggu = true;
+  kunciTombol_('btnSimpanFormPengguna');
+  jalankan('simpanPengguna', [d], function (res) {
+    kirimMenunggu = false;
+    bukaTombol_('btnSimpanFormPengguna');
+    if (!res || !res.success) {
+      pemberitahuan((res && res.message) || 'Gagal menyimpan pengguna.', 'galat');
+      return;
+    }
+    pemberitahuan('Pengguna tersimpan.', 'sukses');
+    tutupPanelSemua_();
+    muatPengguna();
+  }, function (err) {
+    kirimMenunggu = false;
+    bukaTombol_('btnSimpanFormPengguna');
+    pemberitahuan('Gagal menyimpan pengguna: ' + pesanGalat(err), 'galat');
+  });
+}
+
+function nonaktifkanPenggunaKlien(email) {
+  if (!window.confirm('Nonaktifkan pengguna ' + email + '?')) return;
+  jalankan('nonaktifkanPengguna', [email], function (res) {
+    if (!res || !res.success) {
+      pemberitahuan((res && res.message) || 'Gagal menonaktifkan pengguna.', 'galat');
+      return;
+    }
+    pemberitahuan(res.message || 'Pengguna dinonaktifkan.', 'sukses');
+    muatPengguna();
+  }, function (err) {
+    pemberitahuan('Gagal menonaktifkan pengguna: ' + pesanGalat(err), 'galat');
+  });
+}
+
+function klikAksiPengguna(e) {
+  var t = e.target;
+  while (t && t.getAttribute && !t.getAttribute('data-aksi')) t = t.parentNode;
+  var aksi = t && t.getAttribute ? t.getAttribute('data-aksi') : null;
+  var id = t && t.getAttribute ? t.getAttribute('data-id') : null;
+  if (!aksi || !id) return;
+  if (aksi === 'nonaktif') nonaktifkanPenggunaKlien(id);
+  else if (aksi === 'pin') aturPinPengguna_(id);
+}
+
+// Setel/reset PIN tanpa mengubah nama, peran, atau NISN.
+function aturPinPengguna_(email) {
+  var pin = window.prompt('PIN baru untuk ' + email + ' (minimal 7 karakter):', '');
+  if (pin === null) return;
+  pin = String(pin).trim();
+  if (pin.length < 4) {
+    pemberitahuan('PIN minimal 7 karakter.', 'galat');
+    return;
+  }
+  jalankan('simpanPengguna', [{ email: email, pin: pin }], function (res) {
+    if (!res || !res.success) {
+      pemberitahuan((res && res.message) || 'Gagal mengatur PIN.', 'galat');
+      return;
+    }
+    pemberitahuan('PIN diperbarui.', 'sukses');
+    muatPengguna();
+  }, function (err) {
+    pemberitahuan('Gagal mengatur PIN: ' + pesanGalat(err), 'galat');
+  });
+}
+
+// ==== LOG AUDIT (admin) ====
+var dataLog = [];
+
+function renderLog() {
+  renderTabel(document.getElementById('tabelLog'), [
+    { label: 'Waktu', nilai: function (r) { return r.waktu ? tanggalJam(r.waktu) : '-'; }, kelas: 'td-tanggal' },
+    { label: 'Akun', kunci: 'akun', kelas: 'td-bukti' },
+    { label: 'Aksi', kunci: 'aksi' },
+    { label: 'Objek', kunci: 'objek' },
+    { label: 'Detail', kunci: 'detail' }
+  ], dataLog);
+  isiTeks('logJumlah', dataLog.length + ' baris');
+}
+
+function isiOpsiAksiLog_() {
+  var el = document.getElementById('logFilterAksi');
+  if (!el) return;
+  var lama = el.value;
+  var unik = {};
+  (dataLog || []).forEach(function (r) { if (r.aksi) unik[r.aksi] = true; });
+  var html = '<option value="">Semua</option>';
+  Object.keys(unik).sort().forEach(function (a) {
+    html += '<option value="' + escapeHtml(a) + '">' + escapeHtml(a) + '</option>';
+  });
+  el.innerHTML = html;
+  if (Array.prototype.some.call(el.options, function (o) { return o.value === lama; })) {
+    el.value = lama;
+  }
+}
+
+function muatLog() {
+  var filter = {
+    q: nilaiEl_('logCari'),
+    aksi: nilaiEl_('logFilterAksi'),
+    limit: Number(nilaiEl_('logLimit')) || 100
+  };
+  jalankan('getLog', [filter], function (res) {
+    if (!res || !res.success) {
+      pemberitahuan('Gagal memuat log: ' + ((res && res.message) || ''), 'galat');
+      return;
+    }
+    var aksiTerpilih = filter.aksi;
+    dataLog = res.data || [];
+    renderLog();
+    isiOpsiAksiLog_();
+    document.getElementById('logFilterAksi').value = aksiTerpilih;
+  }, function (err) {
+    pemberitahuan('Gagal memuat log: ' + pesanGalat(err), 'galat');
+  });
+}
+
+function tampilUtama(data) {
+  sembunyikanSemua();
+  document.getElementById('viewUtama').hidden = false;
+
+  var nama = data.nama || data.email || 'Pengguna';
+  isiTeks('sesiNama', nama);
+  isiTeks('sesiAvatar', nama.charAt(0).toUpperCase());
+  isiTeks('sesiPeran', LABEL_PERAN[data.peran] || data.peran || '');
+
+  var menuAdmin = document.getElementById('menuAdmin');
+  if (menuAdmin) menuAdmin.hidden = data.peran !== 'Admin';
+
+  // Wali kelas hanya membuka Data taruna; halaman keuangan sekolah disembunyikan.
+  var wali = data.peran === 'Wali Kelas';
+  ['dashboard', 'penerimaan', 'pengeluaran', 'tagihan', 'potongan', 'laporan']
+    .forEach(function (nama) {
+      var el = document.getElementById('nav-' + nama);
+      if (el) el.hidden = wali;
+    });
+
+  var tombolTulis = document.querySelectorAll('.btn-tulis');
+  for (var i = 0; i < tombolTulis.length; i++) {
+    tombolTulis[i].hidden = !data.bisaTulis;
+  }
+  var tombolTaruna = document.querySelectorAll('.btn-kelola-taruna');
+  for (var j = 0; j < tombolTaruna.length; j++) {
+    tombolTaruna[j].hidden = !data.bisaKelolaTaruna;
+  }
+
+  var antrean = data.antrean || {};
+  aturBadge('badgeTerima', antrean.terima);
+  aturBadge('badgeKeluar', antrean.keluar);
+
+  switchPage(wali ? 'taruna' : 'dashboard');
+}
+
+function aturBadge(id, jumlah) {
+  var el = document.getElementById(id);
+  if (!el) return;
+  var n = Number(jumlah) || 0;
+  el.textContent = String(n);
+  el.hidden = n <= 0;
+}
+
+// ==== TOAST ====
+function pemberitahuan(teks, jenis) {
+  var wadah = document.getElementById('toast');
+  if (!wadah) {
+    wadah = document.createElement('div');
+    wadah.id = 'toast';
+    wadah.setAttribute('role', 'status');
+    wadah.setAttribute('aria-live', 'polite');
+    document.body.appendChild(wadah);
+  }
+
+  var el = document.createElement('div');
+  el.className = 'toast toast-' + (jenis || 'info');
+  el.textContent = String(teks === null || teks === undefined ? '' : teks);
+  wadah.appendChild(el);
+
+  setTimeout(function () {
+    if (el.parentNode) el.parentNode.removeChild(el);
+  }, 4200);
+
+  return el;
+}
+
+// ==== FORMAT ====
+function rupiah(n) {
+  var angka = Number(n);
+  if (!isFinite(angka)) return 'Rp 0';
+  var negatif = angka < 0;
+  var teks = String(Math.round(Math.abs(angka))).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  return (negatif ? '- ' : '') + 'Rp ' + teks;
+}
+
+function bagianTanggal(iso) {
+  var cocok = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso === null || iso === undefined ? '' : iso).trim());
+  if (!cocok) return null;
+  return { hari: Number(cocok[3]), bulan: Number(cocok[2]) - 1, tahun: cocok[1] };
+}
+
+function tanggalPendek(iso) {
+  var t = bagianTanggal(iso);
+  if (!t || !BULAN_PENDEK[t.bulan]) return '';
+  return t.hari + ' ' + BULAN_PENDEK[t.bulan] + ' ' + t.tahun;
+}
+
+function tanggalPanjang(iso) {
+  var t = bagianTanggal(iso);
+  if (!t || !BULAN_PANJANG[t.bulan]) return '';
+  return t.hari + ' ' + BULAN_PANJANG[t.bulan] + ' ' + t.tahun;
+}
+
+// Periode tagihan 'YYYY-MM' tampil 'Oktober 2026'; selain itu apa adanya.
+function periodePanjang(periode) {
+  var tahunan = /^(\d{4})\/(\d{4})$/.exec(String(periode || ''));
+  if (tahunan) return 'TA ' + tahunan[1] + '/' + tahunan[2];
+  var m = /^(\d{4})-(\d{2})$/.exec(String(periode || ''));
+  if (!m || !BULAN_PANJANG[Number(m[2]) - 1]) return String(periode || '');
+  return BULAN_PANJANG[Number(m[2]) - 1] + ' ' + m[1];
+}
+
+// Seperti tanggalPanjang tapi hari nol-depan ("04 November 2026") untuk surat resmi.
+function tanggalSuratPad_(iso) {
+  var t = bagianTanggal(iso);
+  if (!t || !BULAN_PANJANG[t.bulan]) return tanggalPanjang(iso);
+  return String(t.hari).padStart(2, '0') + ' ' + BULAN_PANJANG[t.bulan] + ' ' + t.tahun;
+}
+
+// ==== ATURAN GLOBAL TANGGAL & JAM ====
+// Zona aplikasi: WITA (UTC+08:00). Tanggal tampil "31 Okt 2026",
+// waktu tampil "14:05 WITA". Simpanan server: tanggal YYYY-MM-DD,
+// timestamp ISO dengan offset lokal.
+function pad2_(n) {
+  return (Number(n) < 10 ? '0' : '') + Number(n);
+}
+
+// Jam lokal dari ISO; mendukung "+08:00", "Z" (data lama), atau tanpa zona.
+function jamPendek(iso) {
+  var s = String(iso === null || iso === undefined ? '' : iso);
+  var m = /T(\d{2}):(\d{2})/.exec(s);
+  if (!m) return '';
+  if (/Z$/.test(s) || /[+-]\d{2}:\d{2}$/.test(s)) {
+    var d = new Date(s);
+    if (!isNaN(d.getTime())) {
+      var w = new Date(d.getTime() + 8 * 3600 * 1000);
+      return pad2_(w.getUTCHours()) + ':' + pad2_(w.getUTCMinutes());
+    }
+  }
+  return m[1] + ':' + m[2];
+}
+
+function tanggalJam(iso) {
+  var tgl = tanggalPendek(String(iso === null || iso === undefined ? '' : iso).slice(0, 10));
+  var jam = jamPendek(iso);
+  if (!tgl) return jam ? jam + ' ' + LABEL_ZONA : '';
+  return jam ? tgl + ' ' + jam + ' ' + LABEL_ZONA : tgl;
+}
+
+var LABEL_ZONA = 'WITA';
+
+// Jam sekarang dalam WITA untuk teks cetak.
+function jamSekarang() {
+  var d = new Date();
+  return pad2_(d.getHours()) + ':' + pad2_(d.getMinutes()) + ' ' + LABEL_ZONA;
+}
+
+function escapeHtml(s) {
+  return String(s === null || s === undefined ? '' : s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+// ==== TABEL ====
+// kolom = [{ label, kunci, kelas?, html?, nilai?(baris) }]
+// baris = array objek; kosong -> satu baris "Belum ada data."
+function renderTabel(tbody, kolom, baris, opsi) {
+  if (!tbody) return 0;
+  var daftarKolom = kolom || [];
+  var daftarBaris = baris || [];
+  var kelasBaris = opsi && typeof opsi.kelasBaris === 'function' ? opsi.kelasBaris : null;
+
+  if (!daftarBaris.length) {
+    tbody.innerHTML = '<tr><td class="tabel-kosong" colspan="' +
+      Math.max(1, daftarKolom.length) + '">Belum ada data.</td></tr>';
+    return 0;
+  }
+
+  var html = '';
+  daftarBaris.forEach(function (row) {
+    var kelasTambahan = kelasBaris ? kelasBaris(row) : '';
+    html += '<tr' + (kelasTambahan ? ' class="' + escapeHtml(kelasTambahan) + '"' : '') + '>';
+    daftarKolom.forEach(function (k) {
+      var isi = typeof k.nilai === 'function' ? k.nilai(row) : row[k.kunci];
+      var kelas = k.kelas ? ' class="' + escapeHtml(k.kelas) + '"' : '';
+      var label = k.label ? ' data-label="' + escapeHtml(k.label) + '"' : '';
+      html += '<td' + kelas + label + '>' +
+        (k.html ? String(isi === null || isi === undefined ? '' : isi) : escapeHtml(isi)) +
+        '</td>';
+    });
+    html += '</tr>';
+  });
+
+  tbody.innerHTML = html;
+  return daftarBaris.length;
+}
+
+</script>

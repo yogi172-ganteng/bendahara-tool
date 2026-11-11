@@ -1,0 +1,384 @@
+<script>
+// ==== UTILITAS ====
+function nilaiKotak_(id) {
+  var el = document.getElementById(id);
+  return el ? String(el.value === null || el.value === undefined ? '' : el.value).trim() : '';
+}
+
+function kunciTombol_(id) {
+  var el = document.getElementById(id);
+  if (el) {
+    el.disabled = true;
+    el.setAttribute('aria-busy', 'true');
+  }
+}
+
+function bukaTombol_(id) {
+  var el = document.getElementById(id);
+  if (el) {
+    el.disabled = false;
+    el.setAttribute('aria-busy', 'false');
+  }
+}
+
+function isiTeks(id, teks) {
+  var el = document.getElementById(id);
+  if (el) el.textContent = teks === null || teks === undefined ? '' : String(teks);
+}
+
+// ==== PERISTIWA ====
+function pasangPeristiwa() {
+  var tombol = document.getElementById('menuBtn');
+  var scrim = document.getElementById('scrim');
+  if (tombol) tombol.addEventListener('click', toggleSidebar);
+  if (scrim) scrim.addEventListener('click', tutupSidebar);
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key !== 'Escape') return;
+    if (tutupPanelSemua_()) return;
+    tutupSidebar();
+  });
+
+  // Panel taruna ditutup dengan klik di luar panel.
+  ['scrimFormTaruna', 'scrimImporTaruna'].forEach(function (id) {
+    var el = document.getElementById(id);
+    if (el) {
+      el.addEventListener('click', function (e) {
+        if (e.target === el) el.hidden = true;
+      });
+    }
+  });
+
+  // Semua tautan bernavigasi membawa data-page (nav sidebar + tautan isi).
+  document.addEventListener('click', function (e) {
+    var t = e.target;
+    while (t && t.getAttribute) {
+      var p = t.getAttribute('data-page');
+      if (p) {
+        e.preventDefault();
+        switchPage(p);
+        return;
+      }
+      t = t.parentNode;
+    }
+  });
+
+  // ---- Data taruna ----
+  var tbodyTaruna = document.getElementById('tabelTaruna');
+  if (tbodyTaruna) tbodyTaruna.addEventListener('click', klikAksiTaruna);
+
+  ['tarunaFilterAngkatan', 'tarunaFilterTingkat', 'tarunaFilterStatus']
+    .forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el) el.addEventListener('change', muatTaruna);
+    });
+
+  var cari = document.getElementById('tarunaCari');
+  if (cari) {
+    var tungguCari = null;
+    cari.addEventListener('input', function () {
+      clearTimeout(tungguCari);
+      tungguCari = setTimeout(muatTaruna, 250);
+    });
+  }
+
+  var formTaruna = document.getElementById('formTaruna');
+  if (formTaruna) formTaruna.addEventListener('submit', simpanFormTaruna);
+
+  onKlik_('btnTambahTaruna', function () { bukaFormTaruna(''); });
+  onKlik_('btnTutupFormTaruna', tutupPanelSemua_);
+  onKlik_('btnBatalFormTaruna', tutupPanelSemua_);
+
+  // ---- Potongan beasiswa / keringanan / pembebasan ----
+  var tbodyPotongan = document.getElementById('tabelPotongan');
+  if (tbodyPotongan) tbodyPotongan.addEventListener('click', klikAksiPotongan);
+
+  ['potonganFilterJenis', 'potonganFilterAktif']
+    .forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el) el.addEventListener('change', muatPotongan);
+    });
+
+  var cariPotongan = document.getElementById('potonganCari');
+  if (cariPotongan) {
+    var tungguCariPotongan = null;
+    cariPotongan.addEventListener('input', function () {
+      clearTimeout(tungguCariPotongan);
+      tungguCariPotongan = setTimeout(muatPotongan, 250);
+    });
+  }
+
+  var formPotongan = document.getElementById('formPotongan');
+  if (formPotongan) formPotongan.addEventListener('submit', simpanFormPotongan);
+  var kelasPotongan = document.getElementById('formPotonganKelas');
+  if (kelasPotongan) kelasPotongan.addEventListener('change', function () {
+    isiOpsiTarunaPotongan_('');
+    isiTeks('formPotonganNisnInfo', '');
+  });
+  var tarunaPotongan = document.getElementById('formPotonganTaruna');
+  if (tarunaPotongan) tarunaPotongan.addEventListener('change', function () {
+    var nisn = nisnPotonganTerpilih_();
+    isiTeks('formPotonganNisnInfo', nisn ? 'NISN ' + nisn : '');
+  });
+
+  onKlik_('btnTambahPotongan', function () { bukaFormPotongan(''); });
+  onKlik_('btnTutupFormPotongan', tutupPanelSemua_);
+  onKlik_('btnBatalFormPotongan', tutupPanelSemua_);
+  onKlik_('btnImporTaruna', bukaImporTaruna);
+  onKlik_('btnTutupImporTaruna', tutupPanelSemua_);
+  onKlik_('btnUnduhTemplateTaruna', function () { unduhTemplateImpor('taruna'); });
+  onKlik_('btnUnduhTemplateXlsx', function () { unduhTemplateImporXlsx('taruna'); });
+  onKlik_('btnPratinjauImpor', pratinjauImporTaruna);
+  onKlik_('btnKonfirmImpor', jalankanImporTaruna);
+
+  var fileImpor = document.getElementById('fileImporTaruna');
+  if (fileImpor) fileImpor.addEventListener('change', pilihBerkasImporTaruna);
+
+  // ---- Tagihan dan tunggakan ----
+  var tbodyTagihan = document.getElementById('tabelTagihan');
+  if (tbodyTagihan) tbodyTagihan.addEventListener('click', klikAksiTagihan);
+
+  ['tagihanFilterJenis', 'tagihanFilterStatus'].forEach(function (id) {
+    var el = document.getElementById(id);
+    if (el) el.addEventListener('change', muatTagihan);
+  });
+
+  var cariTagihan = document.getElementById('tagihanCari');
+  if (cariTagihan) {
+    var tungguCariTagihan = null;
+    cariTagihan.addEventListener('input', function () {
+      clearTimeout(tungguCariTagihan);
+      tungguCariTagihan = setTimeout(muatTagihan, 250);
+    });
+  }
+
+  var periodeTagihan = document.getElementById('tagihanFilterPeriode');
+  if (periodeTagihan) {
+    var tungguPeriodeTagihan = null;
+    periodeTagihan.addEventListener('input', function () {
+      clearTimeout(tungguPeriodeTagihan);
+      tungguPeriodeTagihan = setTimeout(muatTagihan, 300);
+    });
+  }
+
+  var formGenerate = document.getElementById('formGenerateTagihan');
+  if (formGenerate) formGenerate.addEventListener('submit', jalankanGenerateTagihanKlien_);
+
+  var formManual = document.getElementById('formTagihanManual');
+  if (formManual) formManual.addEventListener('submit', simpanTagihanManualKlien_);
+
+  var formSesuaikan = document.getElementById('formSesuaikanTagihan');
+  if (formSesuaikan) formSesuaikan.addEventListener('submit', simpanSesuaikanTagihan_);
+
+  var genJenis = document.getElementById('genJenisBiaya');
+  if (genJenis) {
+    genJenis.addEventListener('change', function () {
+      aturNilaiKotak_('genPeriode', periodeDefaultTagihan_(genJenis.value));
+      tagihanPratinjau = null;
+      var hasil = document.getElementById('hasilPratinjauTagihan');
+      if (hasil) hasil.hidden = true;
+      var konfirm = document.getElementById('btnKonfirmGenerateTagihan');
+      if (konfirm) konfirm.disabled = true;
+    });
+  }
+
+  onKlik_('btnGenerateTagihan', bukaGenerateTagihan);
+  onKlik_('btnTutupGenerateTagihan', tutupPanelSemua_);
+  onKlik_('btnBatalGenerateTagihan', tutupPanelSemua_);
+  onKlik_('btnPratinjauTagihan', pratinjauGenerateTagihanKlien_);
+  onKlik_('btnTagihanManual', bukaTagihanManual);
+  onKlik_('btnTutupTagihanManual', tutupPanelSemua_);
+  onKlik_('btnBatalTagihanManual', tutupPanelSemua_);
+  onKlik_('btnTutupSesuaikanTagihan', tutupPanelSemua_);
+  onKlik_('btnBatalSesuaikanTagihan', tutupPanelSemua_);
+
+  // ---- Penerimaan / pembayaran ----
+  var tbodyPembayaran = document.getElementById('tabelPembayaran');
+  if (tbodyPembayaran) tbodyPembayaran.addEventListener('click', klikAksiPembayaran);
+
+  ['pembayaranFilterStatus', 'pembayaranFilterMetode'].forEach(function (id) {
+    var el = document.getElementById(id);
+    if (el) el.addEventListener('change', muatPenerimaan);
+  });
+
+  var cariPembayaran = document.getElementById('pembayaranCari');
+  if (cariPembayaran) {
+    var tungguCariPembayaran = null;
+    cariPembayaran.addEventListener('input', function () {
+      clearTimeout(tungguCariPembayaran);
+      tungguCariPembayaran = setTimeout(muatPenerimaan, 250);
+    });
+  }
+
+  var formBayar = document.getElementById('formCatatPembayaran');
+  if (formBayar) formBayar.addEventListener('submit', simpanPembayaranKlien_);
+
+  onKlik_('btnCatatPembayaran', bukaCatatPembayaran);
+  onKlik_('btnTutupCatatPembayaran', tutupPanelSemua_);
+  onKlik_('btnBatalCatatPembayaran', tutupPanelSemua_);
+  onKlik_('btnMuatTagihanTerbuka', muatTagihanTerbukaKlien_);
+
+  var selKelasBayar = document.getElementById('bayarKelas');
+  if (selKelasBayar) {
+    selKelasBayar.addEventListener('change', function () {
+      tagihanTerbuka = [];
+      renderTagihanTerbuka();
+      isiOpsiTarunaBayar_();
+    });
+  }
+
+  var selTarunaBayar = document.getElementById('bayarTaruna');
+  if (selTarunaBayar) {
+    selTarunaBayar.addEventListener('change', function () {
+      tagihanTerbuka = [];
+      renderTagihanTerbuka();
+      if (nisnTerpilihBayar_()) muatTagihanTerbukaKlien_();
+    });
+  }
+  onKlik_('btnTutupKuitansi', tutupPanelSemua_);
+  onKlik_('btnBatalKuitansi', tutupPanelSemua_);
+  onKlik_('btnCetakKuitansi', function () { cetakKuitansi(); });
+
+  // ---- Surat tunggakan ----
+  onKlik_('btnSuratTunggakan', function () { bukaSuratTunggakan(); });
+  onKlik_('btnBuatSuratTunggakan', function () { buatSuratTunggakan(); });
+  onKlik_('btnCetakSuratTunggakan', function () { cetakSuratTunggakan(); });
+  onKlik_('btnTutupSuratTunggakan', tutupPanelSemua_);
+  onKlik_('btnBatalSuratTunggakan', tutupPanelSemua_);
+
+  // ---- Pengeluaran ----
+  var tbodyPengeluaran = document.getElementById('tabelPengeluaran');
+  if (tbodyPengeluaran) tbodyPengeluaran.addEventListener('click', klikAksiPengeluaran);
+
+  ['pengeluaranFilterKategori', 'pengeluaranFilterStatus', 'pengeluaranFilterMetode']
+    .forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el) el.addEventListener('change', muatPengeluaran);
+    });
+
+  var cariPengeluaran = document.getElementById('pengeluaranCari');
+  if (cariPengeluaran) {
+    var tungguCariPengeluaran = null;
+    cariPengeluaran.addEventListener('input', function () {
+      clearTimeout(tungguCariPengeluaran);
+      tungguCariPengeluaran = setTimeout(muatPengeluaran, 250);
+    });
+  }
+
+  var formKeluar = document.getElementById('formCatatPengeluaran');
+  if (formKeluar) formKeluar.addEventListener('submit', simpanPengeluaranKlien_);
+
+  onKlik_('btnCatatPengeluaran', bukaCatatPengeluaran);
+  onKlik_('btnTutupCatatPengeluaran', tutupPanelSemua_);
+  onKlik_('btnBatalCatatPengeluaran', tutupPanelSemua_);
+
+  // ---- Login / keluar ----
+  var formLogin = document.getElementById('formLogin');
+  if (formLogin) formLogin.addEventListener('submit', masukAplikasi);
+
+  // Akun Google yang tidak terdaftar tetap boleh masuk lewat PIN.
+  onKlik_('btnTolakKeLogin', function () {
+    var isi = (document.getElementById('tolakEmail') || {}).textContent || '';
+    var email = isi.indexOf('@') > -1 ? isi.trim() : '';
+    tampilLogin({ email: email });
+  });
+  onKlik_('btnKeluar', keluarAplikasi);
+
+  // Paginasi tabel
+  onKlik_('btnTarunaLagi', function () { muatTaruna(true); });
+  onKlik_('btnTagihanLagi', function () { muatTagihan(true); });
+  onKlik_('btnPenerimaanLagi', function () { muatPenerimaan(true); });
+
+  // ---- Dashboard: tombol aksi cepat ----
+  onKlik_('btnDashCatatPengeluaran', function () {
+    switchPage('pengeluaran');
+    bukaCatatPengeluaran();
+  });
+  onKlik_('btnDashCatatPenerimaan', function () {
+    switchPage('penerimaan');
+    bukaCatatPembayaran();
+  });
+  var tabelTransaksi = document.getElementById('tabelTransaksi');
+  if (tabelTransaksi) {
+    tabelTransaksi.addEventListener('click', function (e) {
+      var tombol = e.target.closest ? e.target.closest('.salin-bukti') : null;
+      if (tombol) salinBukti_(tombol);
+    });
+  }
+
+  // ---- Laporan ----
+  var jenisLaporan = document.getElementById('laporanJenis');
+  if (jenisLaporan) jenisLaporan.addEventListener('change', muatLaporan);
+  onKlik_('btnEksporLaporan', eksporCsvLaporan);
+  onKlik_('btnCetakLaporan', bukaCetakLaporan);
+  onKlik_('btnTutupCetakLaporan', tutupPanelSemua_);
+  onKlik_('btnBatalCetakLaporan', tutupPanelSemua_);
+  onKlik_('btnJalankanCetak', function () { window.print(); });
+
+  // ---- Pengguna dan peran ----
+  var tbodyPengguna = document.getElementById('tabelPengguna');
+  if (tbodyPengguna) tbodyPengguna.addEventListener('click', klikAksiPengguna);
+  var formPengguna = document.getElementById('formPengguna');
+  if (formPengguna) formPengguna.addEventListener('submit', simpanFormPengguna);
+  onKlik_('btnTambahPengguna', function () { bukaFormPengguna(null); });
+  var peranPengguna = document.getElementById('formPenggunaPeran');
+  if (peranPengguna) peranPengguna.addEventListener('change', aturFieldKelasPengguna_);
+  onKlik_('btnTutupFormPengguna', tutupPanelSemua_);
+  onKlik_('btnBatalFormPengguna', tutupPanelSemua_);
+
+  // ---- Log audit ----
+  ['logFilterAksi', 'logLimit'].forEach(function (id) {
+    var el = document.getElementById(id);
+    if (el) el.addEventListener('change', muatLog);
+  });
+  var cariLog = document.getElementById('logCari');
+  if (cariLog) {
+    var tungguCariLog = null;
+    cariLog.addEventListener('input', function () {
+      clearTimeout(tungguCariLog);
+      tungguCariLog = setTimeout(muatLog, 250);
+    });
+  }
+
+  // ---- Pengaturan & referensi ----
+  var formIdentitas = document.getElementById('formPengaturanIdentitas');
+  if (formIdentitas) formIdentitas.addEventListener('submit', simpanPengaturanIdentitas);
+
+  var formSaldo = document.getElementById('formPengaturanSaldo');
+  if (formSaldo) formSaldo.addEventListener('submit', simpanPengaturanSaldoAwal);
+
+  onKlik_('btnSimpanJenisBiaya', simpanFormJenisBiaya);
+  onKlik_('btnArsipTahunAjaran', arsipkanTahunAjaranAktif);
+
+  var kodeJenisBiaya = document.getElementById('setKodeJenisBiaya');
+  if (kodeJenisBiaya) {
+    kodeJenisBiaya.addEventListener('input', function () { isiFormJenisBiaya_(kodeJenisBiaya.value); });
+    kodeJenisBiaya.addEventListener('change', function () { isiFormJenisBiaya_(kodeJenisBiaya.value); });
+  }
+
+  var tbodyJenisBiaya = document.getElementById('tabelJenisBiaya');
+  if (tbodyJenisBiaya) tbodyJenisBiaya.addEventListener('click', klikAksiJenisBiaya_);
+
+  var formTarif = document.getElementById('formSimpanTarif');
+  if (formTarif) formTarif.addEventListener('submit', simpanFormTarif);
+
+  var formKategori = document.getElementById('formKategoriPengeluaran');
+  if (formKategori) formKategori.addEventListener('submit', simpanFormKategoriPengeluaran);
+}
+
+function onKlik_(id, fn) {
+  var el = document.getElementById(id);
+  if (el) el.addEventListener('click', fn);
+}
+
+function siapkan() {
+  pasangPeristiwa();
+  mulai();
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', siapkan);
+} else {
+  siapkan();
+}
+</script>

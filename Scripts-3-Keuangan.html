@@ -1,0 +1,580 @@
+<script>
+// ==== PENGELUARAN (klien) ====
+var dataPengeluaran = [];
+var dataKategoriPengeluaran = [];
+
+function filterPengeluaranAktif_() {
+  return {
+    q: nilaiEl_('pengeluaranCari'),
+    kategori: nilaiEl_('pengeluaranFilterKategori'),
+    status: nilaiEl_('pengeluaranFilterStatus'),
+    metode: nilaiEl_('pengeluaranFilterMetode')
+  };
+}
+
+function aksiBarisPengeluaran_(p) {
+  if (!sesiAktif || !sesiAktif.bisaTulis) return '';
+  var html = '';
+  var catatan = '';
+  if (p.status === 'Menunggu verifikasi') {
+    var email = String(sesiAktif.email || '').toLowerCase();
+    if (String(p.dicatatOleh || '').toLowerCase() !== email) {
+      html += '<button class="btn btn-kecil btn-primary" type="button" data-aksi="verifikasi" data-id="' +
+        escapeHtml(p.noBukti) + '">Verifikasi</button>';
+    } else {
+      // Aturan pemisahan tugas harus terlihat, bukan tombol yang hilang diam-diam.
+      catatan = '<span class="dim">Anda yang mencatat, minta admin memverifikasi.</span>';
+    }
+  }
+  if (p.status !== 'Dibatalkan') {
+    html += ' <button class="btn btn-kecil btn-hapus" type="button" data-aksi="batal" data-id="' +
+      escapeHtml(p.noBukti) + '">Batal</button>';
+  }
+  return (html || '<span class="dim">&mdash;</span>') + catatan;
+}
+
+function renderPengeluaran() {
+  renderTabel(document.getElementById('tabelPengeluaran'), [
+    { label: 'No. Bukti', kunci: 'noBukti', kelas: 'td-bukti num' },
+    { label: 'Tanggal', nilai: function (p) { return p.tanggal ? tanggalPendek(p.tanggal) : '-'; }, kelas: 'td-tanggal' },
+    { label: 'Kategori', kunci: 'kategori' },
+    { label: 'Keterangan', kunci: 'keterangan' },
+    { label: 'Jumlah', nilai: function (p) { return rupiah(p.jumlah); }, kelas: 'td-jumlah num' },
+    { label: 'Metode', kunci: 'metode' },
+    { label: 'Status', nilai: function (p) { return chipStatusBayar_(p.status); }, html: true },
+    { label: 'Aksi', nilai: aksiBarisPengeluaran_, html: true, kelas: 'td-aksi' }
+  ], dataPengeluaran);
+  isiTeks('pengeluaranJumlah', dataPengeluaran.length + ' pengeluaran');
+}
+
+function isiOpsiKategoriPengeluaran_() {
+  var isi = function (id, labelSemua, hanyaAktif) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    var lama = el.value;
+    var html = '<option value="">' + escapeHtml(labelSemua) + '</option>';
+    (dataKategoriPengeluaran || []).forEach(function (k) {
+      if (hanyaAktif && !k.aktif) return;
+      html += '<option value="' + escapeHtml(k.nama) + '">' + escapeHtml(k.nama) + '</option>';
+    });
+    el.innerHTML = html;
+    if (Array.prototype.some.call(el.options, function (o) { return o.value === lama; })) {
+      el.value = lama;
+    }
+  };
+  isi('pengeluaranFilterKategori', 'Semua', false);
+  isi('keluarKategori', 'Pilih kategori', true);
+}
+
+function muatPengeluaran() {
+  jalankan('getPengeluaran', [filterPengeluaranAktif_()], function (res) {
+    if (!res || !res.success) {
+      pemberitahuan('Gagal memuat pengeluaran: ' + ((res && res.message) || ''), 'galat');
+      return;
+    }
+    dataPengeluaran = res.data || [];
+    renderPengeluaran();
+  }, function (err) {
+    pemberitahuan('Gagal memuat pengeluaran: ' + pesanGalat(err), 'galat');
+  });
+
+  jalankan('getKategoriPengeluaran', [], function (res) {
+    if (!res || !res.success) return;
+    dataKategoriPengeluaran = res.data || [];
+    isiOpsiKategoriPengeluaran_();
+  }, function () { /* opsi kategori opsional */ });
+
+  segarkanAntrean_();
+}
+
+function bukaCatatPengeluaran() {
+  var scrim = document.getElementById('scrimCatatPengeluaran');
+  if (!scrim) return;
+  isiOpsiKategoriPengeluaran_();
+  aturNilaiKotak_('keluarTanggal', hariIniIso_());
+  aturNilaiKotak_('keluarJumlah', '');
+  aturNilaiKotak_('keluarKeterangan', '');
+  aturNilaiKotak_('keluarMetode', 'Tunai');
+  scrim.hidden = false;
+  var el = document.getElementById('keluarJumlah');
+  if (el) el.focus();
+}
+
+function simpanPengeluaranKlien_(e) {
+  e.preventDefault();
+  if (kirimMenunggu) return;
+  var d = {
+    tanggal: nilaiKotak_('keluarTanggal'),
+    kategori: nilaiEl_('keluarKategori'),
+    jumlah: angkaNominal_(nilaiKotak_('keluarJumlah')),
+    metode: nilaiEl_('keluarMetode'),
+    keterangan: nilaiKotak_('keluarKeterangan')
+  };
+  if (!d.tanggal || !d.kategori || !d.jumlah || !d.keterangan) {
+    pemberitahuan('Tanggal, kategori, jumlah, dan keterangan wajib diisi.', 'galat');
+    return;
+  }
+  kirimMenunggu = true;
+  kunciTombol_('btnSimpanPengeluaran');
+  jalankan('simpanPengeluaran', [d], function (res) {
+    kirimMenunggu = false;
+    bukaTombol_('btnSimpanPengeluaran');
+    if (!res || !res.success) {
+      pemberitahuan((res && res.message) || 'Gagal menyimpan pengeluaran.', 'galat');
+      return;
+    }
+    pemberitahuan('Tersimpan: ' + ((res.data && res.data.noBukti) || ''), 'sukses');
+    tutupPanelSemua_();
+    muatPengeluaran();
+    lupakanHalaman_(['dashboard']);
+  }, function (err) {
+    kirimMenunggu = false;
+    bukaTombol_('btnSimpanPengeluaran');
+    pemberitahuan('Gagal menyimpan pengeluaran: ' + pesanGalat(err), 'galat');
+  });
+}
+
+function verifikasiPengeluaranKlien_(noBukti) {
+  if (!window.confirm('Verifikasi pengeluaran ' + noBukti + '?')) return;
+  jalankan('verifikasiPengeluaran', [{ noBukti: noBukti }], function (res) {
+    if (!res || !res.success) {
+      pemberitahuan((res && res.message) || 'Gagal verifikasi.', 'galat');
+      return;
+    }
+    pemberitahuan(res.message || 'Pengeluaran diverifikasi.', 'sukses');
+    muatPengeluaran();
+    lupakanHalaman_(['dashboard']);
+  }, function (err) {
+    pemberitahuan('Gagal verifikasi: ' + pesanGalat(err), 'galat');
+  });
+}
+
+function batalkanPengeluaranKlien_(noBukti) {
+  var alasan = window.prompt('Alasan pembatalan ' + noBukti + ':', '');
+  if (alasan === null) return;
+  if (!String(alasan).trim()) {
+    pemberitahuan('Alasan pembatalan wajib diisi.', 'galat');
+    return;
+  }
+  jalankan('batalkanPengeluaran', [{ noBukti: noBukti, alasan: alasan }], function (res) {
+    if (!res || !res.success) {
+      pemberitahuan((res && res.message) || 'Gagal membatalkan.', 'galat');
+      return;
+    }
+    pemberitahuan(res.message || 'Pengeluaran dibatalkan.', 'sukses');
+    muatPengeluaran();
+    lupakanHalaman_(['dashboard']);
+  }, function (err) {
+    pemberitahuan('Gagal membatalkan: ' + pesanGalat(err), 'galat');
+  });
+}
+
+function klikAksiPengeluaran(e) {
+  var t = e.target;
+  while (t && t.getAttribute && !t.getAttribute('data-aksi')) t = t.parentNode;
+  var aksi = t && t.getAttribute ? t.getAttribute('data-aksi') : null;
+  var id = t && t.getAttribute ? t.getAttribute('data-id') : null;
+  if (!aksi || !id) return;
+  if (aksi === 'verifikasi') verifikasiPengeluaranKlien_(id);
+  else if (aksi === 'batal') batalkanPengeluaranKlien_(id);
+}
+
+// ==== DASHBOARD (klien) ====
+var NAMA_BULAN_PANJANG = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+  'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+
+function namaBulanDari_(ym) {
+  var m = /^(\d{4})-(\d{2})$/.exec(String(ym || ''));
+  if (!m) return '';
+  return NAMA_BULAN_PANJANG[Number(m[2]) - 1] || '';
+}
+
+function namaBulanDariSpp_(spp) {
+  var m = /^(\d{4})-(0[1-9]|1[0-2])$/.exec(String(spp || ''));
+  if (!m) return 'Periode belum ditetapkan';
+  return NAMA_BULAN_PANJANG[Number(m[2]) - 1] + ' ' + m[1];
+}
+
+function setJudulPeriode_(periode) {
+  var teksPeriode = namaBulanDariSpp_(periode && periode.periodeSpp);
+  var ta = (periode && periode.tahunAjaran) || '';
+  var bagian = String(ta).split('/');
+  var rentang = bagian.length === 2 && bagian[0] && bagian[1]
+    ? 'Juli ' + bagian[0] + ' sampai Juni ' + bagian[1]
+    : 'tahun ajaran ini';
+  isiTeks('subPeriode', 'Tahun ajaran ' + (ta || '—') + ', per ' + teksPeriode);
+  isiTeks('jdl-spp', 'SPP ' + teksPeriode + ' yang sudah terbayar, per kelas');
+  isiTeks('jdl-metode', 'Metode pembayaran, ' + teksPeriode);
+  isiTeks('subGrafik', 'Penerimaan dan pengeluaran, ' + rentang);
+}
+
+// Ringkas untuk kartu: Rp 41 jt, Rp 1,2 M. Satu desimal agar tidak membulatkan uang.
+function rupiahRingkas_(n) {
+  var v = Number(n) || 0;
+  var tanda = v < 0 ? '-' : '';
+  v = Math.abs(v);
+  if (v >= 1000000000) return tanda + 'Rp ' + (v / 1000000000).toFixed(1).replace('.', ',').replace(/,0$/, '') + ' M';
+  if (v >= 1000000) return tanda + 'Rp ' + (v / 1000000).toFixed(1).replace('.', ',').replace(/,0$/, '') + ' jt';
+  if (v >= 1000) return tanda + 'Rp ' + Math.round(v / 1000) + ' rb';
+  return tanda + 'Rp ' + v;
+}
+
+// Satuan adaptif untuk grafik: rb bila < 1 jt, jt bila >= 1 jt.
+function satuanGrafik_(n, unit) {
+  var v = Number(n) || 0;
+  if (v === 0) return '0';
+  if (unit === 'jt') return (v / 1000000).toFixed(1).replace('.', ',').replace(/,0$/, '') + ' jt';
+  if (unit === 'rb') return Math.round(v / 1000) + ' rb';
+  return String(Math.round(v));
+}
+
+function renderGrafikDashboard(grafik) {
+  var kotak = document.getElementById('grafikBulan');
+  if (!kotak) return;
+  var daftar = grafik || [];
+  var maks = 1;
+  daftar.forEach(function (b) {
+    if (b.nilai > maks) maks = b.nilai;
+    if (Number(b.keluar) > maks) maks = Number(b.keluar);
+  });
+  var unit = maks >= 1000000 ? 'jt' : (maks >= 1000 ? 'rb' : 'rp');
+
+  var html = '<div class="chart-grid" aria-hidden="true">';
+  [1, 0.75, 0.5, 0.25, 0].forEach(function (f) {
+    html += '<span style="top:' + Math.round((1 - f) * 100) + '%"><b>' +
+      satuanGrafik_(maks * f, unit) + '</b></span>';
+  });
+  html += '</div>';
+  var ringkas = daftar.map(function (b) {
+    return b.bulan + ' masuk ' + satuanGrafik_(b.nilai, unit) +
+      ', keluar ' + satuanGrafik_(b.keluar, unit);
+  }).join('; ');
+  kotak.setAttribute('aria-label', 'Penerimaan dan pengeluaran per bulan. ' + ringkas + '.');
+  daftar.forEach(function (b) {
+    if (b.kosong) {
+      html += '<div class="bar-wrap"><div class="bar-pair">' +
+        '<div class="bar bar-empty" style="height:1.5%"></div></div></div>';
+      return;
+    }
+    var masuk = b.nilai > 0 ? Math.max(2, (b.nilai / maks) * 92) : 0;
+    var keluar = Number(b.keluar) > 0 ? Math.max(2, (Number(b.keluar) / maks) * 92) : 0;
+    html += '<div class="bar-wrap"><span class="bar-val num">' +
+      satuanGrafik_(b.nilai, unit) + '</span><div class="bar-pair">' +
+      '<div class="bar" style="height:' + masuk.toFixed(2) + '%"></div>' +
+      '<div class="bar bar-keluar" style="height:' + keluar.toFixed(2) + '%"></div>' +
+      '</div></div>';
+  });
+  kotak.innerHTML = html;
+
+  var sumbu = document.getElementById('grafikBulanX');
+  if (sumbu) {
+    sumbu.innerHTML = daftar.map(function (b) {
+      return '<span' + (b.kosong ? ' class="dim"' : '') + '>' + escapeHtml(b.bulan) + '</span>';
+    }).join('');
+  }
+}
+
+function renderKategoriDashboard(kategori) {
+  var kotak = document.getElementById('daftarKategori');
+  if (!kotak) return;
+  var daftar = kategori || [];
+  var maks = 1;
+  var total = 0;
+  daftar.forEach(function (k) {
+    total += k.nominal;
+    if (k.nominal > maks) maks = k.nominal;
+  });
+  isiTeks('subKategori', 'Total ' + rupiahRingkas_(total));
+  if (!daftar.length) {
+    kotak.innerHTML = '<p class="empty-state">Belum ada penerimaan.</p>';
+    return;
+  }
+  kotak.innerHTML = daftar.map(function (k) {
+    var lebar = Math.round((k.nominal / maks) * 100);
+    return '<div class="kat-row"><div class="kat-head"><b>' + escapeHtml(k.nama) + '</b>' +
+      '<span class="num">' + rupiahRingkas_(k.nominal) + '</span></div>' +
+      '<div class="track"><div class="fill" style="width:' + lebar + '%"></div></div></div>';
+  }).join('');
+}
+
+function renderSppKelasDashboard(daftar) {
+  var kotak = document.getElementById('daftarSppKelas');
+  if (!kotak) return;
+  var baris = daftar || [];
+  if (!baris.length) {
+    kotak.innerHTML = '<p class="empty-state">Belum ada tagihan SPP bulan berjalan.</p>';
+    return;
+  }
+  kotak.innerHTML = baris.map(function (b) {
+    return '<div class="kelas-row' + (b.rendah ? ' rendah' : '') + '"><span>' +
+      escapeHtml(b.kelas) + '</span><div class="track"><div class="fill" style="width:' +
+      Number(b.persen) + '%"></div></div><span class="pct num">' +
+      Number(b.persen) + '% terbayar</span></div>';
+  }).join('');
+}
+
+function renderMetodeDashboard(metode) {
+  var tunai = Number((metode || {}).tunai) || 0;
+  var transfer = Number((metode || {}).transfer) || 0;
+  var total = tunai + transfer;
+  var pTunai = total > 0 ? (tunai / total) * 100 : 0;
+  var pTransfer = total > 0 ? 100 - pTunai : 0;
+
+  var stack = document.getElementById('stackMetode');
+  if (stack) {
+    stack.innerHTML = '<i class="tunai" style="width:' + pTunai.toFixed(1) + '%"></i>' +
+      '<i class="transfer" style="width:' + pTransfer.toFixed(1) + '%"></i>';
+    stack.setAttribute('aria-label', 'Tunai ' + rupiah(tunai) + ', transfer ' + rupiah(transfer) + '.');
+  }
+  var legend = document.getElementById('legendMetode');
+  if (legend) {
+    legend.innerHTML =
+      '<span><i class="swatch tunai" aria-hidden="true"></i><span>Tunai</span><span class="num">' +
+      rupiahRingkas_(tunai) + '</span></span>' +
+      '<span><i class="swatch transfer" aria-hidden="true"></i><span>Transfer</span><span class="num">' +
+      rupiahRingkas_(transfer) + '</span></span>';
+  }
+}
+
+function renderBeasiswaDashboard(b) {
+  var kotak = document.getElementById('ringkasBeasiswa');
+  if (!kotak) return;
+  var d = b || {};
+  var adaAngka = ['jumlahTaruna', 'beasiswa', 'keringanan', 'pembebasan', 'potonganTahunIni']
+    .some(function (k) { return d[k] !== null && d[k] !== undefined && isFinite(Number(d[k])); });
+  if (!adaAngka) {
+    kotak.innerHTML = '<p class="card-note">Data beasiswa belum tersedia.</p>';
+    return;
+  }
+  var baris = [];
+  if (d.jumlahTaruna !== null && d.jumlahTaruna !== undefined && isFinite(Number(d.jumlahTaruna))) {
+    baris.push('<div class="bsi-total"><span>Jumlah taruna</span><span class="num">' +
+      Number(d.jumlahTaruna) + ' taruna</span></div>');
+  }
+  if (d.beasiswa !== null && d.beasiswa !== undefined && isFinite(Number(d.beasiswa))) {
+    baris.push('<div class="bsi-row"><span>Beasiswa prestasi</span><span class="num">' +
+      Number(d.beasiswa) + ' taruna</span></div>');
+  }
+  if (d.keringanan !== null && d.keringanan !== undefined && isFinite(Number(d.keringanan))) {
+    baris.push('<div class="bsi-row"><span>Keringanan SPP</span><span class="num">' +
+      Number(d.keringanan) + ' taruna</span></div>');
+  }
+  if (d.pembebasan !== null && d.pembebasan !== undefined && isFinite(Number(d.pembebasan))) {
+    baris.push('<div class="bsi-row"><span>Pembebasan penuh</span><span class="num">' +
+      Number(d.pembebasan) + ' taruna</span></div>');
+  }
+  if (d.potonganTahunIni !== null && d.potonganTahunIni !== undefined &&
+      isFinite(Number(d.potonganTahunIni))) {
+    baris.push('<div class="bsi-foot"><span>Nilai potongan tahun ajaran ini</span><span class="num">' +
+      rupiah(Number(d.potonganTahunIni)) + '</span></div>');
+  }
+  kotak.innerHTML = baris.join('');
+}
+
+function chipTransaksiDashboard_(status, keluar) {
+  // Pengeluaran dan pembayaran memakai kelas status berbeda meski sama-sama terverifikasi.
+  if (keluar) {
+    if (status === 'Terverifikasi' || status === 'DISETUJUI') return '<span class="chip status-keluar">Keluar</span>';
+    if (status === 'Dibatalkan' || status === 'DITOLAK') return '<span class="chip status-keluar">' + escapeHtml(status) + '</span>';
+    return '<span class="chip chip-sebagian">' + escapeHtml(status) + '</span>';
+  }
+  if (status === 'Terverifikasi') return '<span class="chip status-lunas">Terverifikasi</span>';
+  if (status === 'Dibatalkan') return '<span class="chip status-keluar">Dibatalkan</span>';
+  return '<span class="chip chip-sebagian">' + escapeHtml(status) + '</span>';
+}
+
+function renderTransaksiDashboard(daftar) {
+  var tbody = document.getElementById('tabelTransaksi');
+  if (!tbody) return;
+  var baris = daftar || [];
+  if (!baris.length) {
+    tbody.innerHTML = '<tr><td class="tabel-kosong" colspan="7">Belum ada transaksi.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = baris.map(function (t) {
+    var keluar = String(t.noBukti).indexOf('KK/') === 0;
+    var nama = keluar
+      ? escapeHtml(t.tarunaKeterangan)
+      : '<b>' + escapeHtml(t.tarunaKeterangan) + '</b>';
+    var jumlah = keluar
+      ? '<span class="keluar">- ' + rupiah(t.jumlah) + '</span>'
+      : rupiah(t.jumlah);
+    return '<tr>' +
+      '<td class="td-tanggal" data-label="Tanggal">' + escapeHtml(tanggalPendek(t.tanggal)) + '</td>' +
+      '<td class="td-bukti num" data-label="No. bukti">' + escapeHtml(t.noBukti) +
+        '<button class="salin-bukti" type="button" data-salin="' + escapeHtml(t.noBukti) +
+        '" aria-label="Salin nomor bukti ' + escapeHtml(t.noBukti) + '">Salin</button></td>' +
+      '<td class="td-taruna">' + nama + '</td>' +
+      '<td data-label="Kategori">' + escapeHtml(t.kategori) + '</td>' +
+      '<td data-label="Metode">' + escapeHtml(t.metode) + '</td>' +
+      '<td class="td-jumlah num" data-label="Jumlah">' + jumlah + '</td>' +
+      '<td data-label="Status">' + chipTransaksiDashboard_(t.status, keluar) + '</td>' +
+      '</tr>';
+  }).join('');
+}
+
+// Nomor bukti sering dicocokkan dengan kuitansi; sediakan salin sekali klik.
+function salinBukti_(tombol) {
+  var teks = tombol.getAttribute('data-salin') || '';
+  var selesai = function () {
+    tombol.textContent = 'Tersalin';
+    setTimeout(function () { tombol.textContent = 'Salin'; }, 1200);
+  };
+  var gagal = function () { pemberitahuan('Gagal menyalin nomor bukti.', 'galat'); };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(teks).then(selesai, function () {
+      if (salinCadangan_(teks)) selesai(); else gagal();
+    });
+    return;
+  }
+  if (salinCadangan_(teks)) selesai(); else gagal();
+}
+
+function salinCadangan_(teks) {
+  var area = document.createElement('textarea');
+  area.value = teks;
+  area.setAttribute('readonly', '');
+  area.style.position = 'fixed';
+  area.style.opacity = '0';
+  document.body.appendChild(area);
+  area.select();
+  var berhasil = false;
+  try { berhasil = document.execCommand('copy'); } catch (e) { berhasil = false; }
+  document.body.removeChild(area);
+  return berhasil;
+}
+
+var dashboardTerakhir_ = null;
+
+// Di layar ponsel angka penuh bisa terpotong; tampilkan versi ringkas.
+function nilaiKpi_(id, nilai) {
+  var n = Number(nilai) || 0;
+  var ringkas = typeof window !== 'undefined' && window.matchMedia &&
+    window.matchMedia('(max-width: 700px)').matches;
+  isiTeks(id, ringkas ? rupiahRingkas_(n) : rupiah(n));
+  var el = document.getElementById(id);
+  // Nilai ringkas selalu punya angka penuh di tooltip.
+  if (el) el.title = rupiah(n);
+}
+
+function renderDashboard(d) {
+  var data = d || {};
+  dashboardTerakhir_ = data;
+  var kpi = data.kpi || {};
+  var per = data.periode || {};
+  var bulanBerjalan = namaBulanDari_(per.periodeSpp);
+
+  setJudulPeriode_(per);
+  isiTeks('btnDashTahunAjaran', 'Tahun ajaran ' + (per.tahunAjaran || '-'));
+  var antreanVerif = Number(data.menungguVerifikasi) || 0;
+  isiTeks('antreanVerifJumlah', antreanVerif);
+  isiTeks('antreanVerifTeks', antreanVerif
+    ? antreanVerif + ' transfer menunggu verifikasi. Buka daftar Penerimaan.'
+    : 'Tidak ada transfer yang menunggu.');
+
+  nilaiKpi_('kpiPenerimaan', kpi.penerimaanTotal);
+  isiTeks('kpiPenerimaanBulan', (bulanBerjalan || 'Bulan ini') + ': ' +
+    rupiah(Number(kpi.penerimaanBulanIni) || 0));
+  nilaiKpi_('kpiPengeluaran', kpi.pengeluaranTotal);
+  isiTeks('kpiPengeluaranBulan', (bulanBerjalan || 'Bulan ini') + ': ' +
+    rupiah(Number(kpi.pengeluaranBulanIni) || 0));
+  nilaiKpi_('kpiSaldo', kpi.saldoTotal);
+  var tunai = Number(kpi.rincianTunai) || 0;
+  var bank = Number(kpi.rincianBank) || 0;
+  isiTeks('kpiTunai', 'Tunai ' + rupiahRingkas_(tunai));
+  isiTeks('kpiBank', 'Bank ' + rupiahRingkas_(bank));
+  var elTunai = document.getElementById('kpiTunai');
+  var elBank = document.getElementById('kpiBank');
+  if (elTunai) elTunai.title = 'Tunai ' + rupiah(tunai);
+  if (elBank) elBank.title = 'Bank ' + rupiah(bank);
+
+  var tunggakan = data.tunggakan || {};
+  nilaiKpi_('kpiTunggakan', tunggakan.nominal);
+  isiTeks('kpiTunggakanJumlah', (Number(tunggakan.jumlahTaruna) || 0) + ' taruna belum lunas');
+
+  renderGrafikDashboard(data.grafik);
+  renderKategoriDashboard(data.kategori);
+  renderSppKelasDashboard(data.sppKelas);
+  renderMetodeDashboard(data.metode);
+  renderBeasiswaDashboard(data.beasiswa);
+  renderTransaksiDashboard(data.transaksi);
+}
+
+function bukaAntreanVerifikasi_() {
+  var filterStatus = document.getElementById('pembayaranFilterStatus');
+  if (filterStatus) filterStatus.value = 'Menunggu verifikasi';
+  switchPage('penerimaan');
+  muatPenerimaan();
+}
+
+var antreanVerifLink = document.getElementById('antreanVerif');
+if (antreanVerifLink) {
+  antreanVerifLink.addEventListener('click', bukaAntreanVerifikasi_);
+  antreanVerifLink.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      bukaAntreanVerifikasi_();
+    }
+  });
+}
+
+// Kartu KPI adalah tautan: klik atau Enter/Space membuka halaman tujuannya.
+function aktifkanKartuLink_(id, buka) {
+  var el = document.getElementById(id);
+  if (!el) return;
+  el.addEventListener('click', buka);
+  el.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      buka();
+    }
+  });
+}
+
+function bukaPenerimaan_() {
+  var filterStatus = document.getElementById('pembayaranFilterStatus');
+  if (filterStatus) filterStatus.value = '';
+  switchPage('penerimaan');
+  muatPenerimaan();
+}
+
+function bukaTunggakan_() {
+  var filterStatus = document.getElementById('tagihanFilterStatus');
+  if (filterStatus) filterStatus.value = 'Belum';
+  switchPage('tagihan');
+  muatTagihan();
+}
+
+function bukaSaldo_() {
+  switchPage('laporan');
+  muatLaporan();
+}
+
+aktifkanKartuLink_('kartuPenerimaan', bukaPenerimaan_);
+aktifkanKartuLink_('kartuTunggakan', bukaTunggakan_);
+aktifkanKartuLink_('kartuSaldo', bukaSaldo_);
+
+function muatDashboard() {
+  jalankan('getDashboard', [{}], function (res) {
+    if (!res || !res.success) {
+      pemberitahuan('Gagal memuat dashboard: ' + ((res && res.message) || ''), 'galat');
+      return;
+    }
+    renderDashboard(res.data || {});
+  }, function (err) {
+    pemberitahuan('Gagal memuat dashboard: ' + pesanGalat(err), 'galat');
+  });
+}
+
+// Format angka KPI bergantung lebar layar; render ulang saat melewati batas.
+if (typeof window !== 'undefined' && window.addEventListener) {
+  var jedaUkuran_ = null;
+  window.addEventListener('resize', function () {
+    if (jedaUkuran_) clearTimeout(jedaUkuran_);
+    jedaUkuran_ = setTimeout(function () {
+      if (dashboardTerakhir_) renderDashboard(dashboardTerakhir_);
+    }, 150);
+  });
+}
+
+</script>
