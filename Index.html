@@ -154,38 +154,41 @@
         <div class="topbar">
           <div>
             <div class="title-row">
-              <h1 class="page-title">Ringkasan keuangan</h1>
+              <h1 class="page-title">Meja kerja bendahara</h1>
             </div>
-            <p class="page-sub" id="subPeriode">Periode belum ditetapkan</p>
+            <p class="page-sub">Ringkasan kas, tagihan, dan aktivitas keuangan sekolah.</p>
+            <div class="dashboard-context" aria-label="Periode laporan">
+              <span class="context-chip" id="btnDashTahunAjaran">Tahun ajaran 2026/2027</span>
+              <span class="context-chip context-chip-soft" id="subPeriode">Periode belum ditetapkan</span>
+            </div>
           </div>
           <div class="topbar-actions">
-            <span class="btn-label" id="btnDashTahunAjaran">Tahun ajaran 2026/2027</span>
             <button class="btn btn-tulis" type="button" id="btnDashCatatPengeluaran">Catat pengeluaran</button>
             <button class="btn btn-primary btn-tulis" type="button" id="btnDashCatatPenerimaan">+ Catat penerimaan</button>
           </div>
         </div>
 
         <div class="grid-kpi">
-          <div class="card card-link" id="kartuPenerimaan" role="link" tabindex="0" aria-label="Buka daftar Penerimaan">
-            <div class="card-label">Total penerimaan</div>
+          <div class="card kpi-card kpi-income card-link" id="kartuPenerimaan" role="link" tabindex="0" aria-label="Buka daftar Penerimaan">
+            <div class="kpi-heading"><div class="card-label">Total penerimaan</div><span class="kpi-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3v18m-5-5 5 5 5-5M5 7h14"/></svg></span></div>
             <div class="card-value num" id="kpiPenerimaan">—</div>
             <div class="card-note num" id="kpiPenerimaanBulan">—</div>
           </div>
-          <div class="card">
-            <div class="card-label">Total pengeluaran</div>
+          <div class="card kpi-card kpi-expense">
+            <div class="kpi-heading"><div class="card-label">Total pengeluaran</div><span class="kpi-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 21V3m-5 5 5-5 5 5M5 17h14"/></svg></span></div>
             <div class="card-value num" id="kpiPengeluaran">—</div>
             <div class="card-note num" id="kpiPengeluaranBulan">—</div>
           </div>
-          <div class="card card-dark card-link" id="kartuSaldo" role="link" tabindex="0" aria-label="Buka Laporan kas dan bank">
-            <div class="card-label">Saldo kas dan bank</div>
+          <div class="card kpi-card kpi-balance card-link" id="kartuSaldo" role="link" tabindex="0" aria-label="Buka Laporan kas dan bank">
+            <div class="kpi-heading"><div class="card-label">Saldo kas dan bank</div><span class="kpi-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18M7 15h4"/></svg></span></div>
             <div class="card-value num" id="kpiSaldo">—</div>
             <div class="note-row">
               <span class="num" id="kpiTunai">—</span>
               <span class="num" id="kpiBank">—</span>
             </div>
           </div>
-          <div class="card card-tunggakan card-link" id="kartuTunggakan" role="link" tabindex="0" aria-label="Buka daftar Tagihan yang belum lunas">
-            <div class="card-label">Tunggakan</div>
+          <div class="card kpi-card kpi-arrears card-tunggakan card-link" id="kartuTunggakan" role="link" tabindex="0" aria-label="Buka daftar Tagihan yang belum lunas">
+            <div class="kpi-heading"><div class="card-label">Total tunggakan</div><span class="kpi-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span></div>
             <div class="card-value num warn" id="kpiTunggakan">—</div>
             <div class="card-note" id="kpiTunggakanJumlah">—</div>
           </div>

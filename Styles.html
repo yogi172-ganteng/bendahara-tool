@@ -1334,5 +1334,79 @@ th.num { text-align: right; }
   @page { size: A4; margin: 18mm; }
 }
 
+/* Dashboard bendahara: kartu berhierarki jelas, aksen warna lembut, angka mudah dipindai. */
+#page-dashboard .topbar { align-items: center; margin-bottom: var(--space-5); }
+#page-dashboard .topbar .page-title { font-size: clamp(24px, 2.2vw, 30px); letter-spacing: -0.035em; }
+#page-dashboard .topbar .page-sub { margin-top: 5px; }
+.dashboard-context { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-3); }
+.context-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 4px 10px;
+  border: 1px solid #cfe3f2;
+  border-radius: 999px;
+  background: #edf7fd;
+  color: #285c7c;
+  font-size: 11.5px;
+  font-weight: 650;
+}
+.context-chip-soft { border-color: #dce8e2; background: #f0f7f3; color: #356b52; }
+#page-dashboard .topbar-actions { align-items: center; }
+#page-dashboard .grid-kpi { gap: 14px; margin-bottom: 14px; }
+#page-dashboard .kpi-card {
+  position: relative;
+  min-height: 142px;
+  padding: 18px 20px;
+  overflow: hidden;
+  border-color: #e5eaf0;
+  box-shadow: 0 2px 8px rgba(18, 45, 72, 0.045);
+  transition: transform 150ms ease, box-shadow 150ms ease;
+}
+#page-dashboard .kpi-card:hover { transform: translateY(-2px); box-shadow: 0 8px 22px rgba(18, 45, 72, 0.09); }
+.kpi-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+#page-dashboard .kpi-card .card-label { color: #64748b; font-size: 12.5px; font-weight: 600; }
+.kpi-icon { width: 36px; height: 36px; display: grid; place-items: center; border-radius: 11px; flex: none; }
+.kpi-icon svg { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.kpi-income .kpi-icon { background: #e4f3fb; color: #1682b8; }
+.kpi-expense .kpi-icon { background: #fff3df; color: #bf7a16; }
+.kpi-balance { background: linear-gradient(135deg, #103550, #174b63); border-color: #174b63 !important; color: #f7fbff; }
+.kpi-balance .card-label { color: #c8d8e4 !important; }
+.kpi-balance .kpi-icon { background: rgba(255,255,255,.12); color: #a6e7d8; }
+.kpi-arrears .kpi-icon { background: #fff0ed; color: #d15d50; }
+#page-dashboard .kpi-card .card-value { margin-top: 9px; font-size: clamp(21px, 1.8vw, 27px); line-height: 1.2; letter-spacing: -0.025em; }
+#page-dashboard .kpi-card .card-note { margin-top: 6px; font-size: 11.5px; color: #778397; }
+#page-dashboard .kpi-balance .note-row { margin-top: 6px; color: #d2e1e9; font-size: 11.5px; }
+#page-dashboard .card:not(.kpi-card) { border-color: #e5eaf0; box-shadow: 0 2px 8px rgba(18, 45, 72, 0.035); }
+#page-dashboard .card-title { font-size: 15px; letter-spacing: -0.01em; }
+#page-dashboard .card-subtitle { color: #778397; }
+#page-dashboard #antreanVerif { border-left: 4px solid #e5a633; background: linear-gradient(105deg, #fffaf0, #ffffff 72%); }
+#page-dashboard #antreanVerif .card-value { color: #a66a09; }
+#page-dashboard .bar { background: #1595c5; }
+#page-dashboard .bar-keluar { background: #f1a34a; }
+#page-dashboard .fill { background: #149a83; }
+#page-dashboard .kelas-row.rendah .fill { background: #e59b37; }
+#page-dashboard .stack .tunai { background: #164b67; }
+#page-dashboard .stack .transfer { background: #1aa384; }
+#page-dashboard .swatch.grafik-masuk { background: #1595c5; }
+#page-dashboard .swatch.grafik-keluar { background: #f1a34a; }
+#page-dashboard .card-transaksi table { border-spacing: 0; }
+#page-dashboard .card-transaksi th { background: #f8fafc; color: #68778a; font-size: 11px; letter-spacing: .035em; }
+#page-dashboard .card-transaksi tbody tr:hover { background: #f8fbfd; }
+
+@media (max-width: 900px) {
+  #page-dashboard .topbar { align-items: flex-start; }
+  #page-dashboard .topbar-actions { width: auto; }
+}
+@media (max-width: 700px) {
+  #page-dashboard .topbar-actions { width: 100%; }
+  #page-dashboard .kpi-card { min-height: 128px; padding: 14px; }
+  #page-dashboard .grid-kpi .kpi-card .card-value { font-size: clamp(17px, 4.5vw, 21px); }
+  #page-dashboard #antreanVerif .card-head-row { align-items: center; }
+}
+@media (prefers-reduced-motion: reduce) {
+  #page-dashboard .kpi-card { transition: none; }
+  #page-dashboard .kpi-card:hover { transform: none; }
+}
 [hidden] { display: none; }
 </style>

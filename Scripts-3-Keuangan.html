@@ -202,7 +202,7 @@ function setJudulPeriode_(periode) {
   var rentang = bagian.length === 2 && bagian[0] && bagian[1]
     ? 'Juli ' + bagian[0] + ' sampai Juni ' + bagian[1]
     : 'tahun ajaran ini';
-  isiTeks('subPeriode', 'Tahun ajaran ' + (ta || '—') + ', per ' + teksPeriode);
+  isiTeks('subPeriode', 'Periode SPP: ' + teksPeriode);
   isiTeks('jdl-spp', 'SPP ' + teksPeriode + ' yang sudah terbayar, per kelas');
   isiTeks('jdl-metode', 'Metode pembayaran, ' + teksPeriode);
   isiTeks('subGrafik', 'Penerimaan dan pengeluaran, ' + rentang);
