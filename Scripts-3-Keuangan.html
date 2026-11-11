@@ -297,6 +297,49 @@ function renderKategoriDashboard(kategori) {
   }).join('');
 }
 
+// Palet donut mengikuti warna aplikasi (teal/navy/orange/amber/blue/slate).
+function warnaDonut_(i) {
+  var palet = ['#12776B', '#16375A', '#C2410C', '#92400E', '#35547A', '#94A3B8'];
+  return palet[i % palet.length];
+}
+
+function renderDonutKategori(kategori) {
+  var wrap = document.getElementById('donutKategoriWrap');
+  var kotak = document.getElementById('donutKategori');
+  var legend = document.getElementById('legendKategori');
+  if (!wrap || !kotak || !legend) return;
+  var daftar = kategori || [];
+  var total = daftar.reduce(function (a, k) { return a + (Number(k.nominal) || 0); }, 0);
+  if (!daftar.length || total <= 0) {
+    wrap.hidden = true;
+    return;
+  }
+  var lima = daftar.slice(0, 5);
+  var terpakai = lima.reduce(function (a, k) { return a + (Number(k.nominal) || 0); }, 0);
+  if (total - terpakai > 0) lima.push({ nama: 'Lainnya', nominal: total - terpakai });
+
+  var terkumpul = 0;
+  var irisan = lima.map(function (k, i) {
+    var mulut = (terkumpul / total) * 360;
+    terkumpul += Number(k.nominal) || 0;
+    var ujung = (terkumpul / total) * 360;
+    return warnaDonut_(i) + ' ' + mulut.toFixed(2) + 'deg ' + ujung.toFixed(2) + 'deg';
+  });
+  kotak.style.background = 'conic-gradient(' + irisan.join(', ') + ')';
+  isiTeks('donutKategoriTotal', rupiahRingkas_(total));
+  kotak.setAttribute('aria-label', 'Donut penerimaan per kategori. Total ' + rupiah(total) + '. ' +
+    lima.map(function (k) {
+      return k.nama + ' ' + Math.round((Number(k.nominal) / total) * 100) + '%';
+    }).join(', ') + '.');
+  legend.innerHTML = lima.map(function (k, i) {
+    var persen = Math.round((Number(k.nominal) / total) * 100);
+    return '<span><i class="swatch" style="background:' + warnaDonut_(i) +
+      '" aria-hidden="true"></i><span class="dl-nama">' + escapeHtml(k.nama) +
+      '</span><span class="dl-nilai num">' + persen + '%</span></span>';
+  }).join('');
+  wrap.hidden = false;
+}
+
 function renderSppKelasDashboard(daftar) {
   var kotak = document.getElementById('daftarSppKelas');
   if (!kotak) return;
@@ -369,6 +412,40 @@ function renderBeasiswaDashboard(b) {
       rupiah(Number(d.potonganTahunIni)) + '</span></div>');
   }
   kotak.innerHTML = baris.join('');
+}
+
+// Tugas & pengingat: gabungan antrean verifikasi, tunggakan, dan kelas di bawah 80%.
+function renderTugasDashboard(data) {
+  var kotak = document.getElementById('daftarTugas');
+  if (!kotak) return;
+  var d = data || {};
+  var tugas = [];
+  var verif = Number(d.menungguVerifikasi) || 0;
+  if (verif > 0) {
+    tugas.push({ teks: verif + ' transfer menunggu verifikasi', chip: 'Segera',
+      kelas: 'chip-sebagian', aksi: 'verif' });
+  }
+  var tunggakan = d.tunggakan || {};
+  var nTaruna = Number(tunggakan.jumlahTaruna) || 0;
+  if (nTaruna > 0) {
+    tugas.push({ teks: nTaruna + ' taruna masih menunggak', chip: 'Pantau',
+      kelas: 'chip-keluar', aksi: 'tunggakan' });
+  }
+  (d.sppKelas || []).filter(function (b) { return b.rendah; }).slice(0, 3)
+    .forEach(function (b) {
+      tugas.push({ teks: 'SPP kelas ' + b.kelas + ' baru ' + Number(b.persen) + '% terbayar',
+        chip: 'Perhatian', kelas: 'chip-sebagian', aksi: '' });
+    });
+  if (!tugas.length) {
+    kotak.innerHTML = '<p class="empty-state">Tidak ada tugas mendesak.</p>';
+    return;
+  }
+  kotak.innerHTML = tugas.map(function (t) {
+    var atribut = t.aksi ? ' role="button" tabindex="0" data-aksi="' + t.aksi + '"' : '';
+    return '<div class="tugas-row' + (t.aksi ? ' tugas-aksi' : '') + '"' + atribut + '>' +
+      '<span class="tugas-teks">' + escapeHtml(t.teks) + '</span>' +
+      '<span class="chip ' + t.kelas + '">' + escapeHtml(t.chip) + '</span></div>';
+  }).join('');
 }
 
 function chipTransaksiDashboard_(status, keluar) {
@@ -446,15 +523,12 @@ function salinCadangan_(teks) {
 
 var dashboardTerakhir_ = null;
 
-// Di layar ponsel angka penuh bisa terpotong; tampilkan versi ringkas.
+// Angka KPI selalu penuh (bisa patah baris di layar sempit), tooltip berisi versi ringkas.
 function nilaiKpi_(id, nilai) {
   var n = Number(nilai) || 0;
-  var ringkas = typeof window !== 'undefined' && window.matchMedia &&
-    window.matchMedia('(max-width: 700px)').matches;
-  isiTeks(id, ringkas ? rupiahRingkas_(n) : rupiah(n));
+  isiTeks(id, rupiah(n));
   var el = document.getElementById(id);
-  // Nilai ringkas selalu punya angka penuh di tooltip.
-  if (el) el.title = rupiah(n);
+  if (el) el.title = rupiahRingkas_(n);
 }
 
 function renderDashboard(d) {
@@ -493,7 +567,9 @@ function renderDashboard(d) {
   isiTeks('kpiTunggakanJumlah', (Number(tunggakan.jumlahTaruna) || 0) + ' taruna belum lunas');
 
   renderGrafikDashboard(data.grafik);
+  renderDonutKategori(data.kategori);
   renderKategoriDashboard(data.kategori);
+  renderTugasDashboard(data);
   renderSppKelasDashboard(data.sppKelas);
   renderMetodeDashboard(data.metode);
   renderBeasiswaDashboard(data.beasiswa);
@@ -553,6 +629,28 @@ function bukaSaldo_() {
 aktifkanKartuLink_('kartuPenerimaan', bukaPenerimaan_);
 aktifkanKartuLink_('kartuTunggakan', bukaTunggakan_);
 aktifkanKartuLink_('kartuSaldo', bukaSaldo_);
+
+// Tugas yang bisa diklik membuka halaman terkait (klik maupun Enter/Space).
+var daftarTugasEl = document.getElementById('daftarTugas');
+if (daftarTugasEl) {
+  var jalankanTugas_ = function (el) {
+    var aksi = el.getAttribute('data-aksi');
+    if (aksi === 'verif') bukaAntreanVerifikasi_();
+    else if (aksi === 'tunggakan') bukaTunggakan_();
+  };
+  daftarTugasEl.addEventListener('click', function (e) {
+    var el = e.target.closest ? e.target.closest('.tugas-aksi') : null;
+    if (el) jalankanTugas_(el);
+  });
+  daftarTugasEl.addEventListener('keydown', function (e) {
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    var el = e.target.closest ? e.target.closest('.tugas-aksi') : null;
+    if (el) {
+      e.preventDefault();
+      jalankanTugas_(el);
+    }
+  });
+}
 
 function muatDashboard() {
   jalankan('getDashboard', [{}], function (res) {

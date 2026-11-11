@@ -200,6 +200,12 @@
           </div>
         </section>
 
+        <section class="card card-tugas" aria-labelledby="jdl-tugas">
+          <h2 class="card-title" id="jdl-tugas">Tugas &amp; pengingat</h2>
+          <p class="card-subtitle">Dari data terbaru: verifikasi, tunggakan, dan kelas di bawah target</p>
+          <div class="tugas-list" id="daftarTugas"></div>
+        </section>
+
         <div class="grid-2">
           <section class="card" aria-labelledby="jdl-bulan">
             <h2 class="card-title" id="jdl-bulan">Arus kas per bulan</h2>
@@ -217,6 +223,12 @@
           <section class="card" aria-labelledby="jdl-kategori">
             <h2 class="card-title" id="jdl-kategori">Penerimaan per kategori</h2>
             <p class="card-subtitle" id="subKategori">—</p>
+            <div class="donut-wrap" id="donutKategoriWrap" hidden>
+              <div class="donut" id="donutKategori" role="img" aria-label="Donut penerimaan per kategori">
+                <span class="donut-center"><b class="num" id="donutKategoriTotal"></b><small>Penerimaan</small></span>
+              </div>
+              <div class="donut-legend" id="legendKategori"></div>
+            </div>
             <div class="kat-list" id="daftarKategori"></div>
           </section>
         </div>
