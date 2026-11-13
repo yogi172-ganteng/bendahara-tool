@@ -10,12 +10,6 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500;600;700&display=swap" rel="stylesheet">
 <?!= include('Styles'); ?>
-<noscript><style>
-@media (max-width: 900px) {
-  .sidebar { position: static; transform: none; height: auto; }
-  .menu-btn, .scrim { display: none; }
-}
-</style></noscript>
 </head>
 <body>
 
@@ -25,8 +19,6 @@
   <div class="card card-tolak">
     <h1 class="page-title">Akses ditolak</h1>
     <p class="page-sub">Akun <b id="tolakEmail">-</b> belum terdaftar sebagai pengguna aplikasi keuangan sekolah.</p>
-    <p class="page-sub">Hubungi admin sekolah untuk meminta akses, lalu buka ulang tautan aplikasi ini.</p>
-    <p class="page-sub">Sudah punya PIN dari admin? Masuk dengan email + PIN di sini.</p>
     <div class="form-actions">
       <button class="btn btn-primary" type="button" id="btnTolakKeLogin">Masuk dengan PIN</button>
     </div>
@@ -36,8 +28,6 @@
 <div class="view-tolak" id="viewLogin" hidden>
   <div class="card card-tolak">
     <h1 class="page-title">Masuk</h1>
-    <p class="page-sub">Gunakan email dan PIN yang diberikan admin sekolah.</p>
-
     <form id="formLogin" novalidate>
       <div class="form-grid">
         <div class="field span-2">
@@ -53,89 +43,40 @@
         <button class="btn btn-primary" type="submit" id="btnLogin">Masuk</button>
       </div>
     </form>
-
-
     <p class="hint" id="versiLogin">versi</p>
   </div>
 </div>
 
 <div id="viewUtama" hidden>
-
   <div class="mobile-bar">
     <div class="brand-name">Keuangan SMK Maritim Nusantara Kupang</div>
-    <button class="menu-btn" id="menuBtn" type="button" aria-expanded="false" aria-controls="sidebar">
-      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
-      Menu
-    </button>
+    <button class="menu-btn" id="menuBtn" type="button" aria-expanded="false" aria-controls="sidebar">Menu</button>
   </div>
   <div class="scrim" id="scrim" hidden></div>
-
   <div class="layout">
-
     <aside class="sidebar" id="sidebar">
       <div class="brand">
-        <div class="brand-mark" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="5" r="2.2"/>
-            <path d="M12 7.2V21M12 21c-3.6 0-6.5-2.2-7.4-5.2M12 21c3.6 0 6.5-2.2 7.4-5.2M5 12H3.2M19 12h1.8M12 9.5a2.4 2.4 0 0 0 0-4.8"/>
-          </svg>
-        </div>
+        <div class="brand-mark" aria-hidden="true"></div>
         <div>
           <div class="brand-name">SMK Maritim Nusantara Kupang</div>
           <div class="brand-sub">Keuangan Sekolah</div>
         </div>
       </div>
-
       <nav class="nav" aria-label="Menu utama">
-        <a href="#dashboard" data-page="dashboard" id="nav-dashboard" aria-current="page" class="active">
-          <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/></svg>
-          Dashboard
-        </a>
-        <a href="#penerimaan" data-page="penerimaan" id="nav-penerimaan">
-          <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v12m0 0-4.5-4.5M12 16l4.5-4.5M4.5 20h15"/></svg>
-          Penerimaan
-          <span class="badge" id="badgeTerima" hidden>0</span>
-        </a>
-        <a href="#pengeluaran" data-page="pengeluaran" id="nav-pengeluaran">
-          <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20V8m0 0-4.5 4.5M12 8l4.5 4.5M4.5 4h15"/></svg>
-          Pengeluaran
-          <span class="badge" id="badgeKeluar" hidden>0</span>
-        </a>
-        <a href="#tagihan" data-page="tagihan" id="nav-tagihan">
-          <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4.5" y="3.5" width="15" height="17" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>
-          Tagihan dan tunggakan
-        </a>
-        <a href="#potongan" data-page="potongan" id="nav-potongan">
-          <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 4 2.3 4.9 5.2.6-3.9 3.6 1.1 5.2L12 15.9l-4.7 2.4 1.1-5.2-3.9-3.6 5.2-.6Z"/></svg>
-          Beasiswa dan keringanan
-        </a>
-        <a href="#taruna" data-page="taruna" id="nav-taruna">
-          <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3"/><path d="M3.5 19.5c.6-3.2 2.9-5 5.5-5s4.9 1.8 5.5 5M16 5.2a3 3 0 0 1 0 5.6M17.6 14.9c1.9.6 3.2 2.2 3.6 4.6"/></svg>
-          Data taruna
-        </a>
-        <a href="#laporan" data-page="laporan" id="nav-laporan">
-          <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 19.5h15M7 16V9.5M12 16V5.5M17 16v-4"/></svg>
-          Laporan
-        </a>
-
+        <a href="#dashboard" data-page="dashboard" id="nav-dashboard" aria-current="page" class="active">Dashboard</a>
+        <a href="#penerimaan" data-page="penerimaan" id="nav-penerimaan">Penerimaan <span class="badge" id="badgeTerima" hidden>0</span></a>
+        <a href="#pengeluaran" data-page="pengeluaran" id="nav-pengeluaran">Pengeluaran <span class="badge" id="badgeKeluar" hidden>0</span></a>
+        <a href="#tagihan" data-page="tagihan" id="nav-tagihan">Tagihan dan tunggakan</a>
+        <a href="#potongan" data-page="potongan" id="nav-potongan">Beasiswa dan keringanan</a>
+        <a href="#taruna" data-page="taruna" id="nav-taruna">Data taruna</a>
+        <a href="#laporan" data-page="laporan" id="nav-laporan">Laporan</a>
         <div class="nav-group" id="menuAdmin" hidden>
           <div class="nav-label">Khusus admin</div>
-
-          <a href="#pengguna" data-page="pengguna" id="nav-pengguna">
-            <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.5 5 6v5.2c0 4 2.9 7.6 7 8.8 4.1-1.2 7-4.8 7-8.8V6Z"/><path d="m9.2 11.8 2 2 3.6-3.8"/></svg>
-            Pengguna dan peran
-          </a>
-          <a href="#log" data-page="log" id="nav-log">
-            <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.2"/><path d="M12 7.6V12l3 1.8"/></svg>
-            Log audit
-          </a>
-          <a href="#pengaturan" data-page="pengaturan" id="nav-pengaturan">
-            <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h9m4 0h3M4 16h3m4 0h9"/><circle cx="15.5" cy="8" r="2"/><circle cx="8.5" cy="16" r="2"/></svg>
-            Tarif dan pengaturan
-          </a>
+          <a href="#pengguna" data-page="pengguna" id="nav-pengguna">Pengguna dan peran</a>
+          <a href="#log" data-page="log" id="nav-log">Log audit</a>
+          <a href="#pengaturan" data-page="pengaturan" id="nav-pengaturan">Tarif dan pengaturan</a>
         </div>
       </nav>
-
       <div class="sidebar-user">
         <div class="avatar" id="sesiAvatar" aria-hidden="true">A</div>
         <div>
@@ -148,8 +89,6 @@
     </aside>
 
     <main class="main">
-
-      <!-- ============ Dashboard ============ -->
       <section class="page-section" id="page-dashboard">
         <div class="topbar">
           <div>
@@ -163,6 +102,8 @@
             </div>
           </div>
           <div class="topbar-actions">
+            <button class="btn btn-tulis" type="button" id="btnDashVerifikasi">Verifikasi transfer</button>
+            <button class="btn btn-tulis" type="button" id="btnDashGenerateTagihan">Generate tagihan SPP</button>
             <button class="btn btn-tulis" type="button" id="btnDashCatatPengeluaran">Catat pengeluaran</button>
             <button class="btn btn-primary btn-tulis" type="button" id="btnDashCatatPenerimaan">+ Catat penerimaan</button>
           </div>
@@ -170,17 +111,17 @@
 
         <div class="grid-kpi">
           <div class="card kpi-card kpi-income card-link" id="kartuPenerimaan" role="link" tabindex="0" aria-label="Buka daftar Penerimaan">
-            <div class="kpi-heading"><div class="card-label">Total penerimaan</div><span class="kpi-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3v18m-5-5 5 5 5-5M5 7h14"/></svg></span></div>
+            <div class="kpi-heading"><div class="card-label">Total penerimaan</div></div>
             <div class="card-value num" id="kpiPenerimaan">—</div>
             <div class="card-note num" id="kpiPenerimaanBulan">—</div>
           </div>
           <div class="card kpi-card kpi-expense">
-            <div class="kpi-heading"><div class="card-label">Total pengeluaran</div><span class="kpi-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 21V3m-5 5 5-5 5 5M5 17h14"/></svg></span></div>
+            <div class="kpi-heading"><div class="card-label">Total pengeluaran</div></div>
             <div class="card-value num" id="kpiPengeluaran">—</div>
             <div class="card-note num" id="kpiPengeluaranBulan">—</div>
           </div>
           <div class="card kpi-card kpi-balance card-link" id="kartuSaldo" role="link" tabindex="0" aria-label="Buka Laporan kas dan bank">
-            <div class="kpi-heading"><div class="card-label">Saldo kas dan bank</div><span class="kpi-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18M7 15h4"/></svg></span></div>
+            <div class="kpi-heading"><div class="card-label">Saldo kas dan bank</div></div>
             <div class="card-value num" id="kpiSaldo">—</div>
             <div class="note-row">
               <span class="num" id="kpiTunai">—</span>
@@ -188,20 +129,51 @@
             </div>
           </div>
           <div class="card kpi-card kpi-arrears card-tunggakan card-link" id="kartuTunggakan" role="link" tabindex="0" aria-label="Buka daftar Tagihan yang belum lunas">
-            <div class="kpi-heading"><div class="card-label">Total tunggakan</div><span class="kpi-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span></div>
+            <div class="kpi-heading"><div class="card-label">Total tunggakan</div></div>
             <div class="card-value num warn" id="kpiTunggakan">—</div>
             <div class="card-note" id="kpiTunggakanJumlah">—</div>
           </div>
         </div>
-        <section class="card card-antrean" id="antreanVerif" role="link" tabindex="0" aria-label="Buka daftar penerimaan dengan transfer menunggu verifikasi">
-          <div class="card-head-row">
-            <div>
-              <h2 class="card-title">Antrean verifikasi transfer</h2>
-              <p class="card-subtitle" id="antreanVerifTeks">—</p>
-            </div>
-            <div class="card-value num" id="antreanVerifJumlah">0</div>
+
+        <section class="card card-aksi-hari" aria-label="Aksi hari ini">
+          <h2 class="card-title">Aksi hari ini</h2>
+          <div class="aksi-hari-grid">
+            <button type="button" class="aksi-hari-item" id="aksiTransfer" aria-label="Buka antrean verifikasi transfer">
+              <span class="aksi-hari-angka num" id="aksiTransferJumlah">0</span>
+              <span class="aksi-hari-label">Transfer menunggu verifikasi</span>
+            </button>
+            <button type="button" class="aksi-hari-item" id="aksiPengeluaran" aria-label="Buka pengeluaran menunggu persetujuan">
+              <span class="aksi-hari-angka num" id="aksiPengeluaranJumlah">0</span>
+              <span class="aksi-hari-label">Pengeluaran menunggu persetujuan</span>
+            </button>
+            <button type="button" class="aksi-hari-item" id="aksiSppRendah" aria-label="Lihat kelas SPP di bawah 80 persen">
+              <span class="aksi-hari-angka num" id="aksiSppRendahJumlah">0</span>
+              <span class="aksi-hari-label">Kelas SPP di bawah 80%</span>
+            </button>
           </div>
         </section>
+
+        <div class="grid-2">
+          <section class="card card-antrean" id="antreanVerif" role="link" tabindex="0" aria-label="Buka daftar penerimaan dengan transfer menunggu verifikasi">
+            <div class="card-head-row">
+              <div>
+                <h2 class="card-title">Antrean verifikasi transfer</h2>
+                <p class="card-subtitle" id="antreanVerifTeks">—</p>
+              </div>
+              <div class="card-value num" id="antreanVerifJumlah">0</div>
+            </div>
+          </section>
+          <section class="card card-antrean" id="antreanPengeluaran" role="link" tabindex="0" aria-label="Buka daftar pengeluaran menunggu persetujuan">
+            <div class="card-head-row">
+              <div>
+                <h2 class="card-title">Pengeluaran menunggu persetujuan</h2>
+                <p class="card-subtitle" id="antreanPengeluaranTeks">—</p>
+              </div>
+              <div class="card-value num" id="antreanPengeluaranJumlah">0</div>
+            </div>
+            <ul class="antrean-list" id="antreanPengeluaranList" hidden></ul>
+          </section>
+        </div>
 
         <div class="grid-2">
           <section class="card" aria-labelledby="jdl-bulan">
@@ -216,7 +188,6 @@
               <span><i class="swatch grafik-keluar"></i><span>Pengeluaran</span></span>
             </div>
           </section>
-
           <section class="card" aria-labelledby="jdl-kategori">
             <h2 class="card-title" id="jdl-kategori">Penerimaan per kategori</h2>
             <p class="card-subtitle" id="subKategori">—</p>
@@ -230,14 +201,12 @@
             <p class="card-subtitle">Kelas di bawah 80% ditandai jingga</p>
             <div class="kelas-list" id="daftarSppKelas"></div>
           </section>
-
           <div style="display:flex;flex-direction:column;gap:var(--space-4);min-width:0">
             <section class="card" aria-labelledby="jdl-metode">
               <h2 class="card-title" id="jdl-metode">Metode pembayaran</h2>
               <div class="stack" id="stackMetode" role="img" aria-label="Metode pembayaran"></div>
               <div class="legend" id="legendMetode"></div>
             </section>
-
             <section class="card" style="flex:1" aria-labelledby="jdl-beasiswa">
               <h2 class="card-title" id="jdl-beasiswa">Beasiswa dan keringanan</h2>
               <div style="margin-top:var(--space-4);display:flex;flex-direction:column;gap:2px" id="ringkasBeasiswa"></div>
@@ -269,1166 +238,19 @@
         </section>
       </section>
 
-      <!-- ============ Penerimaan ============ -->
-      <section class="page-section" id="page-penerimaan" hidden>
-        <div class="topbar">
-          <div>
-            <h1 class="page-title">Penerimaan</h1>
-            <p class="page-sub">Catat pembayaran tunai/transfer, verifikasi antrean, dan cetak kuitansi.</p>
-          </div>
-          <div class="topbar-actions">
-            <button class="btn btn-primary btn-tulis" type="button" id="btnCatatPembayaran">+ Catat pembayaran</button>
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="filter-bar">
-            <label class="filter-item">
-              <span>Cari</span>
-              <input class="input" type="search" id="pembayaranCari" placeholder="Cari no bukti/NISN/nama">
-            </label>
-            <label class="filter-item">
-              <span>Status</span>
-              <select class="select" id="pembayaranFilterStatus">
-                <option value="">Semua</option>
-                <option value="Menunggu verifikasi">Menunggu verifikasi</option>
-                <option value="Terverifikasi">Terverifikasi</option>
-                <option value="Dibatalkan">Dibatalkan</option>
-              </select>
-            </label>
-            <label class="filter-item">
-              <span>Metode</span>
-              <select class="select" id="pembayaranFilterMetode">
-                <option value="">Semua</option>
-                <option value="Tunai">Tunai</option>
-                <option value="Transfer">Transfer</option>
-              </select>
-            </label>
-            <span class="filter-hitung" id="pembayaranJumlah"></span>
-          </div>
-
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>No. Bukti</th>
-                  <th>Tanggal</th>
-                  <th>NISN</th>
-                  <th>Nama</th>
-                  <th>Jenis Biaya</th>
-                  <th>Periode</th>
-                  <th class="num">Jumlah</th>
-                  <th>Metode</th>
-                  <th>Status</th>
-                  <th>Aksi</th>
-                </tr>
-              </thead>
-              <tbody id="tabelPembayaran"></tbody>
-            </table>
-          </div>
-          <div class="form-actions">
-            <button class="btn" type="button" id="btnPenerimaanLagi" hidden>Muat lebih banyak</button>
-          </div>
-        </div>
-
-        <div class="panel-scrim" id="scrimCatatPembayaran" hidden>
-          <form class="panel" id="formCatatPembayaran" novalidate>
-            <div class="panel-head">
-              <div>
-                <div class="panel-title">Catat pembayaran</div>
-                <p class="hint">Satu baris pembayaran per tagihan (B9). Transfer masuk antrean verifikasi, tunai langsung terverifikasi (B7).</p>
-              </div>
-              <button class="panel-close" type="button" id="btnTutupCatatPembayaran" aria-label="Tutup">&times;</button>
-            </div>
-            <div class="form-grid">
-              <div class="field">
-                <label for="bayarTanggal">Tanggal</label>
-                <input class="input" type="date" id="bayarTanggal">
-              </div>
-              <div class="field">
-                <label for="bayarMetode">Metode</label>
-                <select class="select" id="bayarMetode">
-                  <option value="Tunai">Tunai</option>
-                  <option value="Transfer">Transfer</option>
-                </select>
-              </div>
-              <div class="field">
-                <label for="bayarKelas">Kelas</label>
-                <select class="select" id="bayarKelas">
-                  <option value="">Pilih kelas</option>
-                </select>
-              </div>
-              <div class="field">
-                <label for="bayarTaruna">Nama taruna</label>
-                <select class="select" id="bayarTaruna">
-                  <option value="">Pilih taruna</option>
-                </select>
-              </div>
-              <div class="field span-2">
-                <label for="btnMuatTagihanTerbuka">Tagihan</label>
-                <div class="form-actions" style="justify-content:flex-start">
-                  <button class="btn" type="button" id="btnMuatTagihanTerbuka">Muat tagihan terbuka</button>
-                  <span class="filter-hitung" id="bayarNisnInfo"></span>
-                </div>
-              </div>
-              <div class="field span-2">
-                <label for="bayarKeterangan">Keterangan</label>
-                <input class="input" id="bayarKeterangan" placeholder="Opsional">
-              </div>
-            </div>
-            <div class="impor-ringkas" id="daftarTagihanTerbuka" hidden></div>
-            <div class="form-actions">
-              <span class="filter-hitung" id="bayarTotal">Rp 0</span>
-              <button class="btn" type="button" id="btnBatalCatatPembayaran">Batal</button>
-              <button class="btn btn-primary" type="submit" id="btnSimpanPembayaran">Simpan pembayaran</button>
-            </div>
-          </form>
-        </div>
-
-        <div class="panel-scrim" id="scrimKuitansi" hidden>
-          <div class="panel" id="panelKuitansi">
-            <div class="panel-head">
-              <div class="panel-title">Kuitansi</div>
-              <button class="panel-close" type="button" id="btnTutupKuitansi" aria-label="Tutup">&times;</button>
-            </div>
-            <div id="isiKuitansi" class="kuitansi-a4"></div>
-            <div class="form-actions">
-              <button class="btn" type="button" id="btnBatalKuitansi">Tutup</button>
-              <button class="btn btn-primary" type="button" id="btnCetakKuitansi">Cetak A4</button>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- ============ Pengeluaran ============ -->
-      <section class="page-section" id="page-pengeluaran" hidden>
-        <div class="topbar">
-          <div>
-            <h1 class="page-title">Pengeluaran</h1>
-            <p class="page-sub">Catat pengeluaran tunai/transfer dan verifikasi antrean.</p>
-          </div>
-          <div class="topbar-actions">
-            <button class="btn btn-primary btn-tulis" type="button" id="btnCatatPengeluaran">+ Catat pengeluaran</button>
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="filter-bar">
-            <label class="filter-item">
-              <span>Cari</span>
-              <input class="input" type="search" id="pengeluaranCari" placeholder="Cari keterangan">
-            </label>
-            <label class="filter-item">
-              <span>Kategori</span>
-              <select class="select" id="pengeluaranFilterKategori">
-                <option value="">Semua</option>
-              </select>
-            </label>
-            <label class="filter-item">
-              <span>Status</span>
-              <select class="select" id="pengeluaranFilterStatus">
-                <option value="">Semua</option>
-                <option value="Menunggu verifikasi">Menunggu verifikasi</option>
-                <option value="Terverifikasi">Terverifikasi</option>
-                <option value="Dibatalkan">Dibatalkan</option>
-              </select>
-            </label>
-            <label class="filter-item">
-              <span>Metode</span>
-              <select class="select" id="pengeluaranFilterMetode">
-                <option value="">Semua</option>
-                <option value="Tunai">Tunai</option>
-                <option value="Transfer">Transfer</option>
-              </select>
-            </label>
-            <span class="filter-hitung" id="pengeluaranJumlah"></span>
-          </div>
-
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>No. Bukti</th>
-                  <th>Tanggal</th>
-                  <th>Kategori</th>
-                  <th>Keterangan</th>
-                  <th class="num">Jumlah</th>
-                  <th>Metode</th>
-                  <th>Status</th>
-                  <th>Aksi</th>
-                </tr>
-              </thead>
-              <tbody id="tabelPengeluaran"></tbody>
-            </table>
-          </div>
-        </div>
-
-        <div class="panel-scrim" id="scrimCatatPengeluaran" hidden>
-          <form class="panel" id="formCatatPengeluaran" novalidate>
-            <div class="panel-head">
-              <div>
-                <div class="panel-title">Catat pengeluaran</div>
-                <p class="hint">Tunai langsung terverifikasi; transfer masuk antrean verifikasi (B7). Nomor bukti KK dibuat otomatis (B10).</p>
-              </div>
-              <button class="panel-close" type="button" id="btnTutupCatatPengeluaran" aria-label="Tutup">&times;</button>
-            </div>
-            <div class="form-grid">
-              <div class="field">
-                <label for="keluarTanggal">Tanggal</label>
-                <input class="input" type="date" id="keluarTanggal">
-              </div>
-              <div class="field">
-                <label for="keluarKategori">Kategori</label>
-                <select class="select" id="keluarKategori"></select>
-              </div>
-              <div class="field">
-                <label for="keluarJumlah">Jumlah</label>
-                <input class="input" id="keluarJumlah" inputmode="numeric" placeholder="50000">
-              </div>
-              <div class="field">
-                <label for="keluarMetode">Metode</label>
-                <select class="select" id="keluarMetode">
-                  <option value="Tunai">Tunai</option>
-                  <option value="Transfer">Transfer</option>
-                </select>
-              </div>
-              <div class="field span-2">
-                <label for="keluarKeterangan">Keterangan</label>
-                <input class="input" id="keluarKeterangan" placeholder="Mis. beli ATK kantor">
-              </div>
-            </div>
-            <div class="form-actions">
-              <button class="btn" type="button" id="btnBatalCatatPengeluaran">Batal</button>
-              <button class="btn btn-primary" type="submit" id="btnSimpanPengeluaran">Simpan pengeluaran</button>
-            </div>
-          </form>
-        </div>
-      </section>
-
-      <!-- ============ Tagihan dan tunggakan ============ -->
-      <section class="page-section" id="page-tagihan" hidden>
-        <div class="topbar">
-          <div>
-            <h1 class="page-title">Tagihan dan tunggakan</h1>
-            <p class="page-sub">Generate tagihan bulanan/tahunan, tagihan manual, dan panel tunggakan.</p>
-          </div>
-          <div class="topbar-actions">
-            <button class="btn btn-tulis" type="button" id="btnTagihanManual">+ Tagihan manual</button>
-            <button class="btn btn-primary btn-tulis" type="button" id="btnGenerateTagihan">+ Generate tagihan</button>
-          </div>
-        </div>
-
-        <div class="grid-kpi">
-          <div class="card card-tunggakan">
-            <p class="card-label">Total tunggakan</p>
-            <p class="card-value" id="tunggakanNominal">Rp 0</p>
-            <p class="card-note" id="tunggakanJumlah">0 taruna menunggak</p>
-            <button class="btn btn-primary btn-tulis" type="button" id="btnSuratTunggakan">Buat surat tunggakan</button>
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="filter-bar">
-            <label class="filter-item">
-              <span>Cari</span>
-              <input class="input" type="search" id="tagihanCari" placeholder="Cari NISN/nama taruna">
-            </label>
-            <label class="filter-item">
-              <span>Jenis biaya</span>
-              <select class="select" id="tagihanFilterJenis">
-                <option value="">Semua</option>
-              </select>
-            </label>
-            <label class="filter-item">
-              <span>Periode</span>
-              <input class="input" id="tagihanFilterPeriode" placeholder="2026-10">
-            </label>
-            <label class="filter-item">
-              <span>Status</span>
-              <select class="select" id="tagihanFilterStatus">
-                <option value="">Semua</option>
-                <option value="Belum">Belum</option>
-                <option value="Sebagian">Sebagian</option>
-                <option value="Lunas">Lunas</option>
-              </select>
-            </label>
-            <span class="filter-hitung" id="tagihanJumlah"></span>
-          </div>
-
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>NISN</th>
-                  <th>Nama</th>
-                  <th>Kelas</th>
-                  <th>Jenis Biaya</th>
-                  <th>Periode</th>
-                  <th class="num">Tagihan</th>
-                  <th class="num">Setelah potongan</th>
-                  <th class="num">Sisa</th>
-                  <th>Status</th>
-                  <th>Aksi</th>
-                </tr>
-              </thead>
-              <tbody id="tabelTagihan"></tbody>
-            </table>
-          </div>
-          <div class="form-actions">
-            <button class="btn" type="button" id="btnTagihanLagi" hidden>Muat lebih banyak</button>
-          </div>
-        </div>
-
-        <div class="panel-scrim" id="scrimGenerateTagihan" hidden>
-          <form class="panel" id="formGenerateTagihan" novalidate>
-            <div class="panel-head">
-              <div>
-                <div class="panel-title">Generate tagihan</div>
-                <p class="hint">Pratinjau dulu sebelum menulis. Tagihan yang sudah ada dilewati (B11), tarif yang belum diset dilewati (B13), potongan aktif dipotong otomatis (B15).</p>
-              </div>
-              <button class="panel-close" type="button" id="btnTutupGenerateTagihan" aria-label="Tutup">&times;</button>
-            </div>
-            <div class="form-grid">
-              <div class="field">
-                <label for="genJenisBiaya">Jenis biaya</label>
-                <select class="select" id="genJenisBiaya"></select>
-              </div>
-              <div class="field">
-                <label for="genPeriode">Periode</label>
-                <input class="input" id="genPeriode" placeholder="2026-10 atau 2026/2027">
-              </div>
-              <div class="field">
-                <label for="genAngkatan">Tahun masuk</label>
-                <select class="select" id="genAngkatan">
-                  <option value="">Semua tahun masuk</option>
-                </select>
-              </div>
-              <div class="field">
-                <label for="genRombel">Rombel</label>
-                <select class="select" id="genRombel">
-                  <option value="">Semua rombel</option>
-                </select>
-              </div>
-            </div>
-            <div class="impor-ringkas" id="hasilPratinjauTagihan" hidden></div>
-            <div class="form-actions">
-              <button class="btn" type="button" id="btnBatalGenerateTagihan">Batal</button>
-              <button class="btn" type="button" id="btnPratinjauTagihan">Pratinjau</button>
-              <button class="btn btn-primary" type="submit" id="btnKonfirmGenerateTagihan" disabled>Konfirmasi generate</button>
-            </div>
-          </form>
-        </div>
-
-        <div class="panel-scrim" id="scrimTagihanManual" hidden>
-          <form class="panel" id="formTagihanManual" novalidate>
-            <div class="panel-head">
-              <div>
-                <div class="panel-title">Tagihan manual</div>
-                <p class="hint">Kasus khusus (B11). Nominal diisi apa adanya, tanpa potongan otomatis.</p>
-              </div>
-              <button class="panel-close" type="button" id="btnTutupTagihanManual" aria-label="Tutup">&times;</button>
-            </div>
-            <div class="form-grid">
-              <div class="field">
-                <label for="manualNisn">NISN</label>
-                <input class="input" id="manualNisn" inputmode="numeric" maxlength="10" placeholder="10 digit">
-              </div>
-              <div class="field">
-                <label for="manualJenisBiaya">Jenis biaya</label>
-                <select class="select" id="manualJenisBiaya"></select>
-              </div>
-              <div class="field">
-                <label for="manualPeriode">Periode</label>
-                <input class="input" id="manualPeriode" placeholder="2026-10 atau 2026/2027">
-              </div>
-              <div class="field">
-                <label for="manualNominal">Nominal</label>
-                <input class="input" id="manualNominal" inputmode="numeric" placeholder="350000">
-              </div>
-              <div class="field span-2">
-                <label for="manualKeterangan">Keterangan</label>
-                <input class="input" id="manualKeterangan" placeholder="Mis. telat daftar potongan">
-              </div>
-            </div>
-            <div class="form-actions">
-              <button class="btn" type="button" id="btnBatalTagihanManual">Batal</button>
-              <button class="btn btn-primary" type="submit" id="btnSimpanTagihanManual">Simpan</button>
-            </div>
-          </form>
-        </div>
-
-        <div class="panel-scrim" id="scrimSesuaikanTagihan" hidden>
-          <form class="panel" id="formSesuaikanTagihan" novalidate>
-            <div class="panel-head">
-              <div>
-                <div class="panel-title">Sesuaikan tagihan</div>
-                <p class="hint" id="sesuaikanInfo">Nominal tidak boleh di bawah yang sudah terbayar (B17).</p>
-              </div>
-              <button class="panel-close" type="button" id="btnTutupSesuaikanTagihan" aria-label="Tutup">&times;</button>
-            </div>
-            <div class="form-grid">
-              <input type="hidden" id="sesuaikanId">
-              <div class="field">
-                <label for="sesuaikanNominal">Nominal akhir baru</label>
-                <input class="input" id="sesuaikanNominal" inputmode="numeric" placeholder="350000">
-              </div>
-              <div class="field span-2">
-                <label for="sesuaikanAlasan">Alasan</label>
-                <input class="input" id="sesuaikanAlasan" placeholder="Wajib diisi, tercatat di log">
-              </div>
-            </div>
-            <div class="form-actions">
-              <button class="btn" type="button" id="btnBatalSesuaikanTagihan">Batal</button>
-              <button class="btn btn-primary" type="submit" id="btnSimpanSesuaikanTagihan">Simpan penyesuaian</button>
-            </div>
-          </form>
-        </div>
-
-        <div class="panel-scrim" id="scrimSuratTunggakan" hidden>
-          <div class="panel" id="panelSuratTunggakan">
-            <div class="panel-head">
-              <div class="panel-title">Surat tunggakan</div>
-              <button class="panel-close" type="button" id="btnTutupSuratTunggakan" aria-label="Tutup">&times;</button>
-            </div>
-            <div class="form-grid" id="formSuratTunggakan">
-              <label class="field">
-                <span>Taruna menunggak</span>
-                <select id="suratPilihTaruna">
-                  <option value="">Memuat…</option>
-                </select>
-              </label>
-              <label class="field">
-                <span>Batas pembayaran</span>
-                <input type="date" id="suratTenggat">
-              </label>
-            </div>
-            <div id="isiSuratTunggakan" class="surat-tunggakan-a4"></div>
-            <div class="form-actions">
-              <button class="btn" type="button" id="btnBatalSuratTunggakan">Tutup</button>
-              <button class="btn" type="button" id="btnBuatSuratTunggakan">Tampilkan surat</button>
-              <button class="btn btn-primary" type="button" id="btnCetakSuratTunggakan" disabled>Cetak A4</button>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- ============ Beasiswa dan keringanan ============ -->
-      <section class="page-section" id="page-potongan" hidden>
-        <div class="topbar">
-          <div>
-            <h1 class="page-title">Beasiswa dan keringanan</h1>
-            <p class="page-sub">Beasiswa, keringanan, dan pembebasan per taruna.</p>
-          </div>
-          <div class="topbar-actions">
-            <button class="btn btn-primary btn-tulis" type="button" id="btnTambahPotongan">+ Tambah potongan</button>
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="filter-bar">
-            <label class="filter-item">
-              <span>Cari</span>
-              <input class="input" type="search" id="potonganCari" placeholder="Cari NISN/nama taruna">
-            </label>
-            <label class="filter-item">
-              <span>Jenis</span>
-              <select class="select" id="potonganFilterJenis">
-                <option value="">Semua</option>
-                <option value="Beasiswa">Beasiswa</option>
-                <option value="Keringanan">Keringanan</option>
-                <option value="Pembebasan">Pembebasan</option>
-              </select>
-            </label>
-            <label class="filter-item">
-              <span>Aktif</span>
-              <select class="select" id="potonganFilterAktif">
-                <option value="">Semua</option>
-                <option value="ya">Aktif</option>
-                <option value="tidak">Tidak Aktif</option>
-              </select>
-            </label>
-            <span class="filter-hitung" id="potonganJumlah"></span>
-          </div>
-
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>NISN</th>
-                  <th>Nama</th>
-                  <th>Nama Program</th>
-                  <th>Jenis</th>
-                  <th>Jenis Biaya</th>
-                  <th>Tipe Nilai</th>
-                  <th class="num">Nilai</th>
-                  <th>Berlaku</th>
-                  <th>Aktif</th>
-                  <th>Aksi</th>
-                </tr>
-              </thead>
-              <tbody id="tabelPotongan"></tbody>
-            </table>
-          </div>
-        </div>
-
-        <div class="panel-scrim" id="scrimFormPotongan" hidden>
-          <form class="panel" id="formPotongan" novalidate>
-            <div class="panel-head">
-              <div>
-                <div class="panel-title" id="judulFormPotongan">Tambah potongan</div>
-                <p class="hint">Nilai potongan dikurangi otomatis dari tarif saat generate tagihan (B15). Pembebasan penuh menghasilkan NominalAkhir 0 dan status Lunas (B16).</p>
-              </div>
-              <button class="panel-close" type="button" id="btnTutupFormPotongan" aria-label="Tutup">&times;</button>
-            </div>
-            <div class="form-grid">
-              <input type="hidden" id="formPotonganId">
-              <div class="field">
-                <label for="formPotonganKelas">Kelas</label>
-                <select class="select" id="formPotonganKelas" name="kelas"></select>
-              </div>
-              <div class="field">
-                <label for="formPotonganTaruna">Nama taruna</label>
-                <select class="select" id="formPotonganTaruna" name="taruna"></select>
-                <p class="hint" id="formPotonganNisnInfo"></p>
-              </div>
-              <div class="field">
-                <label for="formPotonganJenis">Jenis</label>
-                <select class="select" id="formPotonganJenis" name="jenis">
-                  <option value="Beasiswa">Beasiswa</option>
-                  <option value="Keringanan">Keringanan</option>
-                  <option value="Pembebasan">Pembebasan</option>
-                </select>
-              </div>
-              <div class="field span-2">
-                <label for="formPotonganNamaProgram">Nama program</label>
-                <input class="input" id="formPotonganNamaProgram" name="namaProgram" placeholder="Mis. Beasiswa Prestasi">
-              </div>
-              <div class="field">
-                <label for="formPotonganJenisBiaya">Jenis biaya</label>
-                <select class="select" id="formPotonganJenisBiaya" name="jenisBiaya">
-                  <option value="Semua">Semua jenis biaya</option>
-                </select>
-              </div>
-              <div class="field">
-                <label for="formPotonganTipeNilai">Tipe nilai</label>
-                <select class="select" id="formPotonganTipeNilai" name="tipeNilai">
-                  <option value="Persen">Persen (%)</option>
-                  <option value="Nominal">Nominal (Rp)</option>
-                </select>
-              </div>
-              <div class="field">
-                <label for="formPotonganNilai">Nilai</label>
-                <input class="input num" id="formPotonganNilai" name="nilai" inputmode="numeric" placeholder="Mis. 50 atau 100000">
-              </div>
-              <div class="field">
-                <label for="formPotonganBerlakuDari">Berlaku dari</label>
-                <input class="input" id="formPotonganBerlakuDari" name="berlakuDari" type="date">
-              </div>
-              <div class="field">
-                <label for="formPotonganBerlakuSampai">Berlaku sampai</label>
-                <input class="input" id="formPotonganBerlakuSampai" name="berlakuSampai" type="date">
-              </div>
-              <div class="field span-2">
-                <label for="formPotonganAlasan">Alasan</label>
-                <textarea class="textarea" id="formPotonganAlasan" name="alasan"></textarea>
-              </div>
-              <div class="field">
-                <label for="formPotonganDisetujuiOleh">Disetujui oleh</label>
-                <input class="input" id="formPotonganDisetujuiOleh" name="disetujuiOleh">
-              </div>
-              <div class="field">
-                <label for="formPotonganAktif">Aktif</label>
-                <select class="select" id="formPotonganAktif" name="aktif">
-                  <option value="ya">Ya</option>
-                  <option value="tidak">Tidak</option>
-                </select>
-              </div>
-            </div>
-            <div class="form-actions">
-              <button class="btn" type="button" id="btnBatalFormPotongan">Batal</button>
-              <button class="btn btn-primary" type="submit" id="btnSimpanFormPotongan">Simpan</button>
-            </div>
-          </form>
-        </div>
-      </section>
-
-      <!-- ============ Data taruna ============ -->
-      <section class="page-section" id="page-taruna" hidden>
-        <div class="topbar">
-          <div>
-            <h1 class="page-title">Data taruna</h1>
-            <p class="page-sub">Daftar taruna, tambah/ubah manual, dan impor CSV/XLSX. Nama kelas mengikuti tingkat, program, dan rombel.</p>
-          </div>
-          <div class="topbar-actions">
-            <button class="btn btn-tulis" type="button" id="btnImporTaruna">Impor taruna</button>
-            <button class="btn btn-primary btn-kelola-taruna" type="button" id="btnTambahTaruna">+ Tambah taruna</button>
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="filter-bar">
-            <label class="filter-item">
-              <span>Cari</span>
-              <input class="input" type="search" id="tarunaCari" placeholder="Cari nama/NISN/NIT">
-            </label>
-            <label class="filter-item">
-              <span>Tahun masuk</span>
-              <select class="select" id="tarunaFilterAngkatan"><option value="">Semua</option></select>
-            </label>
-            <label class="filter-item">
-              <span>Tingkat</span>
-              <select class="select" id="tarunaFilterTingkat"><option value="">Semua</option></select>
-            </label>
-            <label class="filter-item">
-              <span>Status</span>
-              <select class="select" id="tarunaFilterStatus"><option value="">Semua</option></select>
-            </label>
-            <span class="filter-hitung" id="tarunaJumlah"></span>
-          </div>
-
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>NISN</th>
-                  <th>Nama</th>
-                  <th>Kelas</th>
-                  <th>Tahun masuk</th>
-                  <th>Program</th>
-                  <th>Status</th>
-                  <th>Tanggal masuk</th>
-                  <th>Aksi</th>
-                </tr>
-              </thead>
-              <tbody id="tabelTaruna"></tbody>
-            </table>
-          </div>
-          <div class="form-actions">
-            <button class="btn" type="button" id="btnTarunaLagi" hidden>Muat lebih banyak</button>
-          </div>
-        </div>
-
-        <div class="panel-scrim" id="scrimFormTaruna" hidden>
-          <form class="panel" id="formTaruna" novalidate>
-            <div class="panel-head">
-              <div>
-                <div class="panel-title" id="judulFormTaruna">Tambah taruna</div>
-                <p class="hint">NISN 10 digit angka dan tidak boleh ganda.</p>
-              </div>
-              <button class="panel-close" type="button" id="btnTutupFormTaruna" aria-label="Tutup">&times;</button>
-            </div>
-            <div class="form-grid">
-              <div class="field">
-                <label for="formNisn">NISN</label>
-                <input class="input" id="formNisn" name="nisn" inputmode="numeric" maxlength="10" placeholder="10 digit">
-              </div>
-              <div class="field">
-                <label for="formNit">NIT</label>
-                <input class="input" id="formNit" name="nit" placeholder="Opsional">
-              </div>
-              <div class="field span-2">
-                <label for="formNama">Nama</label>
-                <input class="input" id="formNama" name="nama">
-              </div>
-              <div class="field">
-                <label for="formJk">Jenis kelamin</label>
-                <select class="select" id="formJk" name="jenisKelamin">
-                  <option value="">Tidak diisi</option>
-                  <option value="Laki-laki">Laki-laki</option>
-                  <option value="Perempuan">Perempuan</option>
-                </select>
-              </div>
-              <div class="field">
-                <label for="formAngkatan">Tahun masuk</label>
-                <input class="input" id="formAngkatan" name="angkatan" inputmode="numeric" maxlength="4" placeholder="2026 (kosongkan = otomatis)">
-              </div>
-              <div class="field">
-                <label for="formTingkat">Tingkat</label>
-                <select class="select" id="formTingkat" name="tingkat">
-                  <option value="">Pilih tingkat</option>
-                  <option value="X">X</option>
-                  <option value="XI">XI</option>
-                  <option value="XII">XII</option>
-                </select>
-              </div>
-              <div class="field">
-                <label for="formProgram">Program</label>
-                <select class="select" id="formProgram" name="program">
-                  <option value="">Pilih program</option>
-                  <option value="NKPI">NKPI</option>
-                  <option value="TKN">TKN</option>
-                  <option value="NKN">NKN</option>
-                </select>
-              </div>
-              <div class="field">
-                <label for="formRombel">Rombel</label>
-                <input class="input" id="formRombel" name="rombel" placeholder="A, B, …">
-              </div>
-              <div class="field">
-                <label for="formStatus">Status</label>
-                <select class="select" id="formStatus" name="status">
-                  <option value="Aktif">Aktif</option>
-                  <option value="Lulus">Lulus</option>
-                  <option value="Keluar">Keluar</option>
-                </select>
-              </div>
-              <div class="field">
-                <label for="formEmailSiswa">Email siswa</label>
-                <input class="input" id="formEmailSiswa" name="emailSiswa" type="email">
-              </div>
-              <div class="field">
-                <label for="formEmailOrtu">Email orang tua</label>
-                <input class="input" id="formEmailOrtu" name="emailOrtu" type="email">
-              </div>
-              <div class="field">
-                <label for="formTanggalMasuk">Tanggal masuk</label>
-                <input class="input" id="formTanggalMasuk" name="tanggalMasuk" type="date">
-              </div>
-              <div class="field span-2">
-                <label for="formCatatan">Catatan</label>
-                <textarea class="textarea" id="formCatatan" name="catatan"></textarea>
-              </div>
-            </div>
-            <div class="form-actions">
-              <button class="btn" type="button" id="btnBatalFormTaruna">Batal</button>
-              <button class="btn btn-primary" type="submit" id="btnSimpanFormTaruna">Simpan</button>
-            </div>
-          </form>
-        </div>
-
-        <div class="panel-scrim" id="scrimImporTaruna" hidden>
-          <div class="panel" style="width:min(720px,100%)">
-            <div class="panel-head">
-              <div>
-                <div class="panel-title">Impor data taruna</div>
-                <p class="hint">Format .csv atau .xlsx, maksimal 5 MB/2.000 baris. NISN 10 digit dan unik; duplikat dilewati dan dilaporkan. Pakai template <b>.xlsx</b> agar NISN berawalan <b>00</b> tidak berubah jadi angka biasa.</p>
-              </div>
-              <button class="panel-close" type="button" id="btnTutupImporTaruna" aria-label="Tutup">&times;</button>
-            </div>
-
-            <div class="field">
-              <label>Template</label>
-              <div class="form-actions" style="justify-content:flex-start">
-                <button class="btn" type="button" id="btnUnduhTemplateTaruna">Unduh CSV</button>
-                <button class="btn" type="button" id="btnUnduhTemplateXlsx">Unduh Excel (.xlsx)</button>
-              </div>
-            </div>
-
-            <div class="field">
-              <label for="fileImporTaruna">Pilih berkas</label>
-              <input class="input" type="file" id="fileImporTaruna" accept=".csv,.xlsx">
-            </div>
-
-            <div class="form-actions">
-              <button class="btn" type="button" id="btnPratinjauImpor" disabled>Pratinjau</button>
-              <button class="btn btn-primary" type="button" id="btnKonfirmImpor" hidden>Impor sekarang</button>
-            </div>
-
-            <div id="hasilImporTaruna" hidden>
-              <div class="impor-ringkas" id="imporRingkas"></div>
-              <div class="table-wrap">
-                <table>
-                  <thead>
-                    <tr><th>Baris</th><th>Status</th><th>Alasan</th></tr>
-                  </thead>
-                  <tbody id="tabelImporTaruna"></tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- ============ Laporan ============ -->
-      <section class="page-section" id="page-laporan" hidden>
-        <div class="topbar">
-          <div>
-            <h1 class="page-title">Laporan</h1>
-            <p class="page-sub">Rekap per bulan/jenis/kelas dan ekspor CSV.</p>
-          </div>
-          <div class="topbar-actions">
-            <button class="btn" type="button" id="btnEksporLaporan">Ekspor CSV</button>
-            <button class="btn btn-primary" type="button" id="btnCetakLaporan">Cetak A4</button>
-          </div>
-        </div>
-
-        <div class="grid-kpi">
-          <div class="card">
-            <div class="card-label">Penerimaan</div>
-            <div class="card-value num" id="lapPenerimaan">Rp 0</div>
-          </div>
-          <div class="card">
-            <div class="card-label">Pengeluaran</div>
-            <div class="card-value num" id="lapPengeluaran">Rp 0</div>
-          </div>
-          <div class="card card-dark">
-            <div class="card-label">Selisih</div>
-            <div class="card-value num" id="lapSaldo">Rp 0</div>
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="filter-bar">
-            <label class="filter-item">
-              <span>Jenis laporan</span>
-              <select class="select" id="laporanJenis">
-                <option value="bulanan">Rekap bulanan</option>
-                <option value="kategori">Penerimaan per kategori</option>
-                <option value="kelas">Rekap per kelas</option>
-                <option value="tunggakan">Tunggakan per taruna</option>
-              </select>
-            </label>
-            <span class="filter-hitung" id="laporanJumlah"></span>
-          </div>
-
-          <div class="table-wrap">
-            <table>
-              <thead id="kepalaLaporan"></thead>
-              <tbody id="barisLaporan"></tbody>
-              <tfoot id="kakiLaporan"></tfoot>
-            </table>
-          </div>
-          <p class="catatan-nol" id="laporanCatatanNol" hidden>Bulan tanpa transaksi disembunyikan di layar kecil.</p>
-        </div>
-
-        <div class="panel-scrim" id="scrimCetakLaporan" hidden>
-          <div class="panel">
-            <div class="panel-head">
-              <div class="panel-title">Cetak laporan</div>
-              <button class="panel-close" type="button" id="btnTutupCetakLaporan" aria-label="Tutup">&times;</button>
-            </div>
-            <div id="isiCetakLaporan" class="kuitansi-a4"></div>
-            <div class="form-actions">
-              <button class="btn" type="button" id="btnBatalCetakLaporan">Tutup</button>
-              <button class="btn btn-primary" type="button" id="btnJalankanCetak">Cetak</button>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- ============ Pengguna dan peran (admin) ============ -->
-      <section class="page-section" id="page-pengguna" hidden>
-        <div class="topbar">
-          <div>
-            <h1 class="page-title">Pengguna dan peran</h1>
-            <p class="page-sub">Daftar pengguna dan peran akses.</p>
-          </div>
-          <div class="topbar-actions">
-            <button class="btn btn-primary btn-tulis" type="button" id="btnTambahPengguna">+ Tambah pengguna</button>
-          </div>
-        </div>
-        <div class="card">
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Email</th>
-                  <th>Nama</th>
-                  <th>Peran</th>
-                  <th>Kelas</th>
-                  <th>NISN</th>
-                  <th>PIN</th>
-                  <th>Aktif</th>
-                  <th>Aksi</th>
-                </tr>
-              </thead>
-              <tbody id="tabelPengguna"></tbody>
-            </table>
-          </div>
-        </div>
-
-        <div class="panel-scrim" id="scrimFormPengguna" hidden>
-          <form class="panel" id="formPengguna" novalidate>
-            <div class="panel-head">
-              <div>
-                <div class="panel-title" id="judulFormPengguna">Tambah pengguna</div>
-                <p class="hint">Peran: Admin (semua), Bendahara (transaksi), Kepsek (lihat), Viewer (lihat).</p>
-              </div>
-              <button class="panel-close" type="button" id="btnTutupFormPengguna" aria-label="Tutup">&times;</button>
-            </div>
-            <div class="form-grid">
-              <div class="field">
-                <label for="formPenggunaEmail">Email</label>
-                <input class="input" id="formPenggunaEmail" type="email" placeholder="nama@sekolah.id">
-              </div>
-              <div class="field">
-                <label for="formPenggunaNama">Nama</label>
-                <input class="input" id="formPenggunaNama" placeholder="Nama lengkap">
-              </div>
-              <div class="field">
-                <label for="formPenggunaPeran">Peran</label>
-                <select class="select" id="formPenggunaPeran">
-                  <option value="Admin">Admin</option>
-                  <option value="Bendahara">Bendahara</option>
-                  <option value="Kepsek">Kepsek</option>
-                  <option value="Viewer">Viewer</option>
-                  <option value="Wali Kelas">Wali Kelas</option>
-                  <option value="Siswa/Ortu">Siswa/Orang tua</option>
-                </select>
-              </div>
-              <div class="field" id="fieldPenggunaKelas" hidden>
-                <label for="formPenggunaKelas">Kelas (khusus Wali Kelas)</label>
-                <input class="input" id="formPenggunaKelas" placeholder="mis. X NKPI A">
-              </div>
-              <div class="field">
-                <label for="formPenggunaAktif">Status</label>
-                <select class="select" id="formPenggunaAktif">
-                  <option value="ya">Aktif</option>
-                  <option value="tidak">Tidak aktif</option>
-                </select>
-              </div>
-              <div class="field" id="fieldPenggunaNisn" hidden>
-                <label for="formPenggunaNisn">NISN (khusus Siswa/Ortu)</label>
-                <input class="input" id="formPenggunaNisn" placeholder="10 digit, pisahkan koma">
-              </div>
-              <div class="field">
-                <label for="formPenggunaPin">PIN</label>
-                <input class="input" id="formPenggunaPin" type="password" inputmode="numeric" autocomplete="new-password" placeholder="Kosongkan bila tidak diubah">
-              </div>
-            </div>
-            <div class="form-actions">
-              <button class="btn" type="button" id="btnBatalFormPengguna">Batal</button>
-              <button class="btn btn-primary" type="submit" id="btnSimpanFormPengguna">Simpan</button>
-            </div>
-          </form>
-        </div>
-      </section>
-
-      <!-- ============ Log audit (admin) ============ -->
-      <section class="page-section" id="page-log" hidden>
-        <div class="topbar">
-          <div>
-            <h1 class="page-title">Log audit</h1>
-            <p class="page-sub">Riwayat aksi tulis, verifikasi, dan impor.</p>
-          </div>
-        </div>
-        <div class="card">
-          <div class="filter-bar">
-            <label class="filter-item">
-              <span>Cari</span>
-              <input class="input" type="search" id="logCari" placeholder="Cari akun/aksi/objek">
-            </label>
-            <label class="filter-item">
-              <span>Aksi</span>
-              <select class="select" id="logFilterAksi">
-                <option value="">Semua</option>
-              </select>
-            </label>
-            <label class="filter-item">
-              <span>Baris</span>
-              <select class="select" id="logLimit">
-                <option value="50">50</option>
-                <option value="100" selected>100</option>
-                <option value="200">200</option>
-              </select>
-            </label>
-            <span class="filter-hitung" id="logJumlah"></span>
-          </div>
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Waktu</th>
-                  <th>Akun</th>
-                  <th>Aksi</th>
-                  <th>Objek</th>
-                  <th>Detail</th>
-                </tr>
-              </thead>
-              <tbody id="tabelLog"></tbody>
-            </table>
-          </div>
-        </div>
-      </section>
-
-      <!-- ============ Tarif dan pengaturan (admin) ============ -->
-      <section class="page-section" id="page-pengaturan" hidden>
-        <div class="topbar">
-          <div>
-            <h1 class="page-title">Tarif dan pengaturan</h1>
-            <p class="page-sub">Tahun ajaran, saldo awal, tarif, dan jenis biaya.</p>
-          </div>
-        </div>
-
-        <div class="grid-2">
-          <!-- Tahun ajaran & identitas -->
-          <section class="card" aria-labelledby="jdl-setIdentitas">
-            <h2 class="card-title" id="jdl-setIdentitas">Tahun ajaran dan identitas</h2>
-            <p class="card-subtitle">Identitas sekolah tampil pada kuitansi dan laporan.</p>
-            <form id="formPengaturanIdentitas" novalidate>
-              <div class="form-grid" style="margin-top:var(--space-4)">
-                <div class="field">
-                  <label for="setTahunAjaran">Tahun ajaran aktif</label>
-                  <input class="input" id="setTahunAjaran" placeholder="2026/2027">
-                </div>
-                <div class="field">
-                  <label for="setNpsn">NPSN</label>
-                  <input class="input" id="setNpsn" inputmode="numeric" placeholder="8 digit">
-                </div>
-                <div class="field span-2">
-                  <label for="setNamaSekolah">Nama sekolah</label>
-                  <input class="input" id="setNamaSekolah">
-                </div>
-                <div class="field span-2">
-                  <label for="setAlamatSekolah">Alamat sekolah</label>
-                  <input class="input" id="setAlamatSekolah">
-                </div>
-              </div>
-              <div class="form-actions">
-                <button class="btn btn-primary btn-tulis" type="submit" id="btnSimpanIdentitas">Simpan identitas</button>
-              </div>
-            </form>
-          </section>
-
-          <!-- Saldo awal -->
-          <section class="card" aria-labelledby="jdl-setSaldo">
-            <h2 class="card-title" id="jdl-setSaldo">Saldo awal kas dan bank</h2>
-            <p class="card-subtitle">Saldo dengan tanggal tertentu sebagai dasar hitungan laporan.</p>
-            <form id="formPengaturanSaldo" novalidate>
-              <div class="form-grid" style="margin-top:var(--space-4)">
-                <div class="field">
-                  <label for="setSaldoAwalKas">Saldo awal kas (Rp)</label>
-                  <input class="input num" id="setSaldoAwalKas" inputmode="numeric" placeholder="Rp 0">
-                </div>
-                <div class="field">
-                  <label for="setSaldoAwalBank">Saldo awal bank (Rp)</label>
-                  <input class="input num" id="setSaldoAwalBank" inputmode="numeric" placeholder="Rp 0">
-                </div>
-                <div class="field span-2">
-                  <label for="setTanggalSaldoAwal">Tanggal saldo awal</label>
-                  <input class="input" id="setTanggalSaldoAwal" type="date">
-                </div>
-              </div>
-              <div class="form-actions">
-                <button class="btn btn-primary btn-tulis" type="submit" id="btnSimpanSaldo">Simpan saldo awal</button>
-              </div>
-            </form>
-          </section>
-
-          <!-- Arsip tahun ajaran -->
-          <section class="card" aria-labelledby="jdl-setArsip">
-            <h2 class="card-title" id="jdl-setArsip">Arsip tahun ajaran</h2>
-            <p class="card-subtitle">Salinan permanen spreadsheet di folder backup Drive.
-              Buat arsip sebelum mengganti tahun ajaran aktif.</p>
-            <div class="form-actions">
-              <button class="btn btn-primary btn-tulis" type="button" id="btnArsipTahunAjaran">
-                Buat arsip tahun ajaran aktif
-              </button>
-            </div>
-          </section>
-        </div>
-
-        <!-- Jenis biaya -->
-        <section class="card" aria-labelledby="jdl-setJenis" style="margin-bottom:var(--space-4)">
-          <h2 class="card-title" id="jdl-setJenis">Jenis biaya</h2>
-          <p class="card-subtitle">Delapan jenis bawaan; menyimpan kode lama memperbarui namanya.</p>
-          <div class="form-grid" style="margin-top:var(--space-4)">
-            <div class="field">
-              <label for="setKodeJenisBiaya">Kode</label>
-              <input class="input" id="setKodeJenisBiaya" maxlength="12" placeholder="SPP">
-            </div>
-            <div class="field">
-              <label for="setNamaJenisBiaya">Nama</label>
-              <input class="input" id="setNamaJenisBiaya">
-            </div>
-            <div class="field">
-              <label for="setPeriodeJenisBiaya">Periode</label>
-              <select class="select" id="setPeriodeJenisBiaya">
-                <option value="Bulanan">Bulanan</option>
-                <option value="Tahunan">Tahunan</option>
-                <option value="Sekali">Sekali</option>
-              </select>
-            </div>
-            <div class="field">
-              <label for="setUrutanJenisBiaya">Urutan</label>
-              <input class="input num" id="setUrutanJenisBiaya" inputmode="numeric">
-            </div>
-            <div class="field">
-              <label for="setAktifJenisBiaya">Status</label>
-              <select class="select" id="setAktifJenisBiaya">
-                <option value="ya">Aktif</option>
-                <option value="tidak">Dinonaktifkan</option>
-              </select>
-            </div>
-          </div>
-          <div class="form-actions">
-            <button class="btn btn-primary btn-tulis" type="button" id="btnSimpanJenisBiaya">Simpan jenis biaya</button>
-          </div>
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr><th>Kode</th><th>Nama</th><th>Periode</th><th>Urutan</th><th>Status</th><th>Aksi</th></tr>
-              </thead>
-              <tbody id="tabelJenisBiaya"></tbody>
-            </table>
-          </div>
-        </section>
-
-        <!-- Tarif + kategori pengeluaran -->
-        <section class="card" aria-labelledby="jdl-setTarif">
-          <h2 class="card-title" id="jdl-setTarif">Tarif per tahun masuk</h2>
-          <p class="card-subtitle">Kunci unik per jenis biaya, tahun masuk, dan tahun ajaran; tarif tahun masuk lama tidak ikut berubah.</p>
-          <form id="formSimpanTarif" novalidate>
-            <div class="form-grid" style="margin-top:var(--space-4)">
-              <div class="field">
-                <label for="setTarifJenisBiaya">Jenis biaya</label>
-                <select class="select" id="setTarifJenisBiaya"></select>
-              </div>
-              <div class="field">
-                <label for="setTarifAngkatan">Tahun masuk</label>
-                <input class="input num" id="setTarifAngkatan" inputmode="numeric" maxlength="4" placeholder="2026">
-              </div>
-              <div class="field">
-                <label for="setTarifTahunAjaran">Tahun ajaran</label>
-                <input class="input" id="setTarifTahunAjaran" placeholder="2026/2027">
-              </div>
-              <div class="field">
-                <label for="setTarifNominal">Nominal (Rp)</label>
-                <input class="input num" id="setTarifNominal" inputmode="numeric" placeholder="Rp 350.000">
-              </div>
-            </div>
-            <div class="form-actions">
-              <button class="btn btn-primary btn-tulis" type="submit" id="btnSimpanTarif">Simpan tariff</button>
-            </div>
-          </form>
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr><th>Jenis biaya</th><th>Tahun masuk</th><th>Tahun ajaran</th><th style="text-align:right">Nominal</th></tr>
-              </thead>
-              <tbody id="tabelTarif"></tbody>
-            </table>
-          </div>
-
-          <h2 class="card-title" id="jdl-setKategori" style="margin-top:var(--space-8)">Kategori pengeluaran</h2>
-          <p class="card-subtitle">Pilihan kategori ketika mencatat pengeluaran.</p>
-          <form id="formKategoriPengeluaran" novalidate class="filter-bar" style="margin-top:var(--space-4)">
-            <label class="filter-item" style="flex:1;min-width:200px">
-              <span>Nama kategori</span>
-              <input class="input" id="setKategoriPengeluaran">
-            </label>
-            <button class="btn btn-primary btn-tulis" type="submit" id="btnSimpanKategori">Tambah kategori</button>
-          </form>
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr><th>Kategori</th><th>Status</th></tr>
-              </thead>
-              <tbody id="tabelKategoriPengeluaran"></tbody>
-            </table>
-          </div>
-        </section>
-      </section>
-
+      <!-- Halaman lain tetap di main; include script memuat logika penuh -->
+      <section class="page-section" id="page-penerimaan" hidden></section>
+      <section class="page-section" id="page-pengeluaran" hidden></section>
+      <section class="page-section" id="page-tagihan" hidden></section>
+      <section class="page-section" id="page-potongan" hidden></section>
+      <section class="page-section" id="page-taruna" hidden></section>
+      <section class="page-section" id="page-laporan" hidden></section>
+      <section class="page-section" id="page-pengguna" hidden></section>
+      <section class="page-section" id="page-log" hidden></section>
+      <section class="page-section" id="page-pengaturan" hidden></section>
     </main>
   </div>
 </div>
-
-<!-- Mode siswa/ortu (B25) diisi pada Task 11. -->
-<div class="view-siswa" id="viewSiswa" hidden></div>
-
-<!-- Wadah cetak kuitansi: diisi saat tombol Cetak A4, satu-satunya isi body di media print. -->
-<div id="cetakKuitansiWadah"></div>
 
 <?!= include('Scripts'); ?>
 <?!= include('Scripts-1-Taruna'); ?>
