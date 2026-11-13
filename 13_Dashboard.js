@@ -67,6 +67,16 @@ function hitungDashboard_(tahunAjaran) {
   const menungguVerifikasi = bacaTabel_('PEMBAYARAN').filter(function (r) {
     return teks_(r.Status) === STATUS_MENUNGGU && teks_(r.Metode).toLowerCase() === 'transfer';
   }).length;
+
+  // Pengeluaran menunggu persetujuan Kepsek/Yayasan (status DIAJUKAN).
+  const antreanDiajukan = pengeluaran.filter(function (p) {
+    return p.status === 'DIAJUKAN';
+  }).sort(function (a, b) {
+    return String(b.tanggal).localeCompare(String(a.tanggal), 'id') ||
+      String(b.noBukti).localeCompare(String(a.noBukti), 'id');
+  });
+  const menungguPersetujuan = antreanDiajukan.length;
+
   const masuk = pembayaran.filter(function (p) { return p.status === 'Terverifikasi'; });
   const keluar = pengeluaran.filter(function (p) { return p.status === 'Terverifikasi' || p.status === 'DISETUJUI'; });
 
@@ -120,6 +130,8 @@ function hitungDashboard_(tahunAjaran) {
       return { kelas: b.kelas, persen: persen, rendah: persen < 80 };
     })
     .sort(function (a, b) { return String(a.kelas).localeCompare(String(b.kelas), 'id'); });
+
+  const kelasRendah = sppKelas.filter(function (b) { return b.rendah; }).length;
 
   const potongan = bacaTabel_('POTONGAN').map(barisPotongan_);
   const potonganTaruna = {};
@@ -177,6 +189,19 @@ function hitungDashboard_(tahunAjaran) {
       jumlahTaruna: Object.keys(tarunaMenunggak).length
     },
     menungguVerifikasi: menungguVerifikasi,
+    menungguPersetujuan: menungguPersetujuan,
+    kelasRendah: kelasRendah,
+    // Ringkas untuk kartu antrean di meja kerja (maks 5 baris).
+    antreanPengeluaran: antreanDiajukan.slice(0, 5).map(function (p) {
+      return {
+        noBukti: p.noBukti,
+        tanggal: p.tanggal,
+        keterangan: p.keterangan,
+        kategori: p.kategori,
+        jumlah: p.jumlah,
+        metode: p.metode
+      };
+    }),
     grafik: grafik,
     kategori: kategori,
     sppKelas: sppKelas,
