@@ -463,8 +463,194 @@ export function MejaKerja() {
           </Card>
         </section>
 
-        {/* rest of component remains as in branch — truncated intentionally for size; full file already on branch with only name change needed above */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Wallet className="size-5 text-in" /> Transaksi Terbaru
+            </CardTitle>
+            <Button className="h-9" onClick={() => setLihatSemua((v) => !v)}>
+              {lihatSemua ? "Ringkas" : "Lihat semua"}
+            </Button>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[40rem] text-sm">
+                <thead>
+                  <tr className="border-b border-line text-left text-xs uppercase tracking-wide text-faint">
+                    <th className="pb-2 font-medium">Tanggal</th>
+                    <th className="pb-2 font-medium">No</th>
+                    <th className="pb-2 font-medium">Uraian</th>
+                    <th className="pb-2 font-medium">Kategori</th>
+                    <th className="pb-2 text-right font-medium">Jumlah</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {baris.map((t) => (
+                    <tr key={t.id} className="border-b border-line last:border-0">
+                      <td className="py-2.5 text-muted">{t.tanggal}</td>
+                      <td className="py-2.5 font-medium tabular-nums">{t.id}</td>
+                      <td className="py-2.5">{t.uraian}</td>
+                      <td className="py-2.5 text-muted">{t.kategori}</td>
+                      <td className={`py-2.5 text-right font-semibold tabular-nums ${t.jenis === "masuk" ? "text-in" : "text-out"}`}>
+                        {t.jenis === "masuk" ? "+" : "−"}{rupiah(t.jumlah)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <FileCheck className="size-5 text-primary" /> Pusat Laporan
+            </CardTitle>
+            <Button onClick={() => setBukaLaporan(true)}>
+              <Plus className="size-4" /> Buat laporan baru
+            </Button>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {laporan.map((l) => (
+              <div
+                key={l.id}
+                className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-line p-3"
+              >
+                <div>
+                  <p className="text-sm font-medium">{l.nama}</p>
+                  <p className="text-xs text-muted">{l.jenis} · {l.tanggal}</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Badge
+                    tone={
+                      l.status === "Final"
+                        ? "in"
+                        : l.status === "Draft"
+                          ? "outline"
+                          : "warn"
+                    }
+                  >
+                    {l.status}
+                  </Badge>
+                  <Button
+                    className="h-8 px-2"
+                    aria-label={`Unduh ${l.nama}`}
+                    onClick={() =>
+                      unduh(
+                        `${l.nama.replace(/\s+/g, "-").toLowerCase()}.txt`,
+                        `${l.nama}\n${l.jenis} · ${l.tanggal}\nStatus: ${l.status}\n`,
+                      )
+                    }
+                  >
+                    <Download className="size-3.5" />
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
       </div>
+
+      <Modal open={bukaCatat} onOpenChange={setBukaCatat} title="Catat transaksi">
+        <form
+          className="space-y-4"
+          onSubmit={(e) => {
+            e.preventDefault();
+            simpanTransaksi();
+          }}
+        >
+          <Field label="Jenis">
+            <select
+              className={fieldClass}
+              value={form.jenis}
+              onChange={(e) =>
+                setForm((f) => ({
+                  ...f,
+                  jenis: e.target.value as JenisTransaksi,
+                  kategori: e.target.value === "masuk" ? "SPP" : "Operasional",
+                }))
+              }
+            >
+              <option value="masuk">Pemasukan</option>
+              <option value="keluar">Pengeluaran</option>
+            </select>
+          </Field>
+          <Field label="Uraian">
+            <input
+              className={fieldClass}
+              value={form.uraian}
+              onChange={(e) => setForm((f) => ({ ...f, uraian: e.target.value }))}
+              placeholder="Contoh: SPP Nov — Nama siswa"
+            />
+          </Field>
+          <Field label="Kategori">
+            <select
+              className={fieldClass}
+              value={form.kategori}
+              onChange={(e) => setForm((f) => ({ ...f, kategori: e.target.value }))}
+            >
+              {kategori.map((k) => (
+                <option key={k} value={k}>
+                  {k}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field label="Jumlah (Rp)">
+            <input
+              className={fieldClass}
+              inputMode="numeric"
+              value={form.jumlah}
+              onChange={(e) => setForm((f) => ({ ...f, jumlah: e.target.value }))}
+              placeholder="450000"
+            />
+          </Field>
+          <div className="flex justify-end gap-2 pt-2">
+            <Button onClick={() => setBukaCatat(false)}>Batal</Button>
+            <Button tone="solid" type="submit">
+              Simpan
+            </Button>
+          </div>
+        </form>
+      </Modal>
+
+      <Modal open={bukaLaporan} onOpenChange={setBukaLaporan} title="Buat laporan baru">
+        <form
+          className="space-y-4"
+          onSubmit={(e) => {
+            e.preventDefault();
+            simpanLaporan();
+          }}
+        >
+          <Field label="Nama laporan">
+            <input
+              className={fieldClass}
+              value={laporanBaru.nama}
+              onChange={(e) => setLaporanBaru((l) => ({ ...l, nama: e.target.value }))}
+              placeholder="Laporan Keuangan Bulanan — November 2026"
+            />
+          </Field>
+          <Field label="Jenis berkas">
+            <select
+              className={fieldClass}
+              value={laporanBaru.jenis}
+              onChange={(e) =>
+                setLaporanBaru((l) => ({ ...l, jenis: e.target.value as "PDF" | "Excel" }))
+              }
+            >
+              <option value="PDF">PDF</option>
+              <option value="Excel">Excel</option>
+            </select>
+          </Field>
+          <div className="flex justify-end gap-2 pt-2">
+            <Button onClick={() => setBukaLaporan(false)}>Batal</Button>
+            <Button tone="solid" type="submit">
+              Simpan draf
+            </Button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 }
